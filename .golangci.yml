@@ -1,0 +1,19 @@
+version: "2"
+
+run:
+  tests: true
+
+linters:
+  default: none
+  enable:
+    - errcheck
+    - govet
+    - ineffassign
+    - revive
+    - staticcheck
+    - testifylint
+    - unused
+
+formatters:
+  enable:
+    - gofmt
