@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
 	"os"
 	"os/exec"
 	"slices"
@@ -56,6 +57,17 @@ type waitxOptions struct {
 	completionArgsFunc  func() []string
 }
 
+type completionRequest struct {
+	resourceArgs     []string
+	toComplete       string
+	forValue         string
+	flagPartial      string
+	forFlagName      bool
+	forEquals        bool
+	forSeparate      bool
+	conditionContext bool
+}
+
 type exitError struct {
 	message string
 	code    int
@@ -90,9 +102,57 @@ func newWaitxOptions(configFlags *genericclioptions.ConfigFlags, streams generic
 	return opts
 }
 
+func RunCompletionBinary(args []string, stdout io.Writer, stderr io.Writer) error {
+	streams := genericiooptions.IOStreams{In: os.Stdin, Out: stdout, ErrOut: stderr}
+	opts := newWaitxOptions(genericclioptions.NewConfigFlags(true), streams)
+	candidates, directive, err := opts.completeBinary(context.Background(), completionInputArgs(args))
+	if err != nil {
+		return err
+	}
+	return renderCompletionOutput(stdout, candidates, directive)
+}
+
 func (o *waitxOptions) bindFlags(cmd *cobra.Command) {
 	cmd.Flags().StringVar(&o.forValue, "for", "", "Condition, jsonpath, or delete/create target passed to kubectl wait")
 	cmd.Flags().StringVar(&o.timeout, "timeout", "", "Timeout forwarded to kubectl wait")
+}
+
+func (o *waitxOptions) completeBinary(ctx context.Context, args []string) ([]string, int, error) {
+	req := parseCompletionRequest(args)
+
+	if req.forEquals || req.forSeparate {
+		return o.completeForRequest(ctx, req), 6, nil
+	}
+	if req.forFlagName {
+		return []string{"--for="}, 6, nil
+	}
+	if req.flagPartial != "" {
+		return filterValues([]string{"--for"}, req.flagPartial), 6, nil
+	}
+
+	switch len(req.resourceArgs) {
+	case 0:
+		candidates, directive := o.specifiedCompleter(req.toComplete)
+		return candidates, int(directive), nil
+	case 1:
+		if strings.Contains(req.resourceArgs[0], "/") {
+			conditions := o.completionConditions(ctx, req.resourceArgs[0])
+			return filterValues(conditions, req.toComplete), 4, nil
+		}
+		candidates, directive := o.specifiedCompleter(req.toComplete)
+		return candidates, int(directive), nil
+	default:
+		if looksLikeResourceNamePair(req.resourceArgs[:2]) {
+			if len(req.resourceArgs) == 2 {
+				candidates, directive := o.nameCompleter(req.resourceArgs[0], req.resourceArgs[1])
+				return candidates, int(directive), nil
+			}
+			resourceArg := req.resourceArgs[0] + "/" + req.resourceArgs[1]
+			conditions := o.completionConditions(ctx, resourceArg)
+			return filterValues(conditions, req.toComplete), 4, nil
+		}
+	}
+	return nil, 4, nil
 }
 
 func (o *waitxOptions) bindCompletion(cmd *cobra.Command) error {
@@ -167,7 +227,7 @@ func (o *waitxOptions) completeForFlag(cmd *cobra.Command, args []string, toComp
 		if resourceArg, ok := completionResourceArg(args); ok {
 			conditions = o.completionConditions(cmd.Context(), resourceArg)
 		}
-		return filterValues(conditions, partial), cobra.ShellCompDirectiveNoSpace | cobra.ShellCompDirectiveNoFileComp
+		return stageValues(conditions, partial), cobra.ShellCompDirectiveNoSpace | cobra.ShellCompDirectiveNoFileComp
 	}
 
 	if partial, ok := completionForConditionSeparatePartial(o.completionArgsFunc(), toComplete); ok {
@@ -178,9 +238,9 @@ func (o *waitxOptions) completeForFlag(cmd *cobra.Command, args []string, toComp
 		// Some shells pass only the suffix after "condition=" as toComplete.
 		// Return raw condition values in that case so replacement does not duplicate the prefix.
 		if !hasPrefixFold(toComplete, "condition=") {
-			return filterValues(conditions, partial), cobra.ShellCompDirectiveNoSpace | cobra.ShellCompDirectiveNoFileComp
+			return stageValues(conditions, partial), cobra.ShellCompDirectiveNoSpace | cobra.ShellCompDirectiveNoFileComp
 		}
-		return filterPrefixed(conditions, "condition="+partial, "condition="), cobra.ShellCompDirectiveNoSpace | cobra.ShellCompDirectiveNoFileComp
+		return stagePrefixedValues(conditions, partial, "condition="), cobra.ShellCompDirectiveNoSpace | cobra.ShellCompDirectiveNoFileComp
 	}
 
 	if !hasPrefixFold(toComplete, "condition=") {
@@ -192,7 +252,91 @@ func (o *waitxOptions) completeForFlag(cmd *cobra.Command, args []string, toComp
 		conditions = o.completionConditions(cmd.Context(), resourceArg)
 	}
 	partial := trimPrefixFold(toComplete, "condition=")
-	return filterPrefixed(conditions, "condition="+partial, "condition="), cobra.ShellCompDirectiveNoSpace | cobra.ShellCompDirectiveNoFileComp
+	return stagePrefixedValues(conditions, partial, "condition="), cobra.ShellCompDirectiveNoSpace | cobra.ShellCompDirectiveNoFileComp
+}
+
+func (o *waitxOptions) completeForRequest(ctx context.Context, req completionRequest) []string {
+	if req.conditionContext {
+		conditions := slices.Clone(defaultConditions)
+		if resourceArg, ok := completionResourceArg(req.resourceArgs); ok {
+			conditions = o.completionConditions(ctx, resourceArg)
+		}
+		if req.forEquals {
+			return stageValues(conditions, req.forValue)
+		}
+		return stagePrefixedValues(conditions, req.forValue, "condition=")
+	}
+
+	return filterValues(defaultForPrefixes, req.forValue)
+}
+
+func parseCompletionRequest(args []string) completionRequest {
+	req := completionRequest{}
+	if len(args) == 0 {
+		return req
+	}
+
+	for i := 0; i < len(args); i++ {
+		arg := args[i]
+		switch {
+		case strings.HasPrefix(arg, "--for=condition="):
+			req.forEquals = true
+			req.conditionContext = true
+			req.forValue = strings.TrimPrefix(arg, "--for=condition=")
+			return req
+		case strings.HasPrefix(arg, "--for="):
+			req.forEquals = true
+			req.forValue = strings.TrimPrefix(arg, "--for=")
+			req.conditionContext = strings.HasPrefix(req.forValue, "condition=")
+			if req.conditionContext {
+				req.forValue = strings.TrimPrefix(req.forValue, "condition=")
+			}
+			return req
+		case arg == "--for":
+			if i+1 >= len(args) {
+				req.forFlagName = true
+				return req
+			}
+			req.forSeparate = true
+			value := args[i+1]
+			if strings.HasPrefix(value, "condition=") {
+				req.conditionContext = true
+				req.forValue = strings.TrimPrefix(value, "condition=")
+			} else {
+				req.forValue = value
+			}
+			return req
+		case strings.HasPrefix(arg, "-"):
+			req.flagPartial = arg
+			req.toComplete = arg
+			continue
+		default:
+			req.resourceArgs = append(req.resourceArgs, arg)
+			req.toComplete = arg
+		}
+	}
+	return req
+}
+
+func completionInputArgs(args []string) []string {
+	if len(args) == 0 {
+		return args
+	}
+	if !completionLineHasTrailingSpace() {
+		return args
+	}
+	if args[len(args)-1] == "" {
+		return args
+	}
+	return append(slices.Clone(args), "")
+}
+
+func completionLineHasTrailingSpace() bool {
+	line := os.Getenv("COMP_LINE")
+	if line == "" {
+		return false
+	}
+	return strings.HasSuffix(line, " ")
 }
 
 func completionForConditionEqualsPartial(words []string) (string, bool) {
@@ -453,12 +597,68 @@ func filterPrefixed(values []string, partial, prefix string) []string {
 	return candidates
 }
 
+func stagePrefixedValues(values []string, partial, prefix string) []string {
+	return prefixValues(stageValues(values, partial), prefix)
+}
+
 func filterValues(values []string, partial string) []string {
 	candidates := make([]string, 0, len(values))
 	for _, value := range values {
 		if partial == "" || strings.HasPrefix(value, partial) {
 			candidates = append(candidates, value)
 		}
+	}
+	return candidates
+}
+
+func stageValues(values []string, partial string) []string {
+	matches := filterValues(values, partial)
+	if partial == "" || len(matches) <= 1 {
+		return matches
+	}
+	return shortestUniquePrefixes(matches, partial)
+}
+
+func shortestUniquePrefixes(values []string, partial string) []string {
+	result := make([]string, 0, len(values))
+	lowerValues := make([]string, 0, len(values))
+	for _, value := range values {
+		lowerValues = append(lowerValues, strings.ToLower(value))
+	}
+	minLen := len(partial) + 1
+	for i, value := range values {
+		if len(value) < minLen {
+			result = append(result, value)
+			continue
+		}
+		chosen := value
+		for n := minLen; n <= len(value); n++ {
+			prefix := value[:n]
+			lowerPrefix := strings.ToLower(prefix)
+			unique := true
+			for j, other := range lowerValues {
+				if i == j {
+					continue
+				}
+				if strings.HasPrefix(other, lowerPrefix) {
+					unique = false
+					break
+				}
+			}
+			if unique {
+				chosen = prefix
+				break
+			}
+		}
+		result = append(result, chosen)
+	}
+	return result
+}
+
+func prefixValues(values []string, prefix string) []string {
+	candidates := make([]string, 0, len(values))
+	for _, value := range values {
+		candidates = append(candidates, prefix+value)
 	}
 	return candidates
 }
@@ -475,4 +675,14 @@ func trimPrefixFold(value, prefix string) string {
 		return value
 	}
 	return value[len(prefix):]
+}
+
+func renderCompletionOutput(w io.Writer, candidates []string, directive int) error {
+	for _, candidate := range candidates {
+		if _, err := fmt.Fprintln(w, candidate); err != nil {
+			return err
+		}
+	}
+	_, err := fmt.Fprintf(w, ":%d\n", directive)
+	return err
 }

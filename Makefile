@@ -1,8 +1,10 @@
 GO_TEST_FLAGS ?= -count=1 -v
 BIN_DIR := bin
+PLUGIN_BIN := $(BIN_DIR)/kubectl-waitx
 PLUGIN_COMPLETE_BIN := $(BIN_DIR)/kubectl_complete-waitx
+PREFIX ?= $(HOME)/.local/bin
 
-.PHONY: deps build test fmt lint clean
+.PHONY: deps build install test fmt lint clean
 
 deps:
 	go mod download
@@ -12,10 +14,15 @@ $(BIN_DIR):
 	mkdir -p $(BIN_DIR)
 
 build: | $(BIN_DIR)
-	rm -f $(BIN_DIR)/kubectl-waitx $(PLUGIN_COMPLETE_BIN)
-	go build -o $(PLUGIN_COMPLETE_BIN) .
-	printf '%s\n' '#!/bin/sh' 'exec kubectl wait "$$@"' > $(BIN_DIR)/kubectl-waitx
-	chmod +x $(BIN_DIR)/kubectl-waitx
+	rm -f $(PLUGIN_BIN) $(PLUGIN_COMPLETE_BIN)
+	go build -o $(PLUGIN_BIN) .
+	printf '%s\n' '#!/bin/sh' 'DIR=$$(CDPATH= cd -- "$$(dirname -- "$$0")" && pwd)' 'exec "$$DIR/kubectl-waitx" __complete "$$@"' > $(PLUGIN_COMPLETE_BIN)
+	chmod +x $(PLUGIN_COMPLETE_BIN)
+
+install: build
+	mkdir -p $(PREFIX)
+	install -m 0755 $(PLUGIN_BIN) $(PREFIX)/kubectl-waitx
+	install -m 0755 $(PLUGIN_COMPLETE_BIN) $(PREFIX)/kubectl_complete-waitx
 
 test: build
 	go test ./... $(GO_TEST_FLAGS)

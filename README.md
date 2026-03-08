@@ -4,8 +4,8 @@
 
 ## Current scope
 
-- provide a `kubectl waitx` entrypoint as a thin shell wrapper of `kubectl wait`
-- ship `kubectl_complete-waitx` as the main completion binary
+- provide a `kubectl waitx` entrypoint as the main binary
+- ship `kubectl_complete-waitx` as a thin script that delegates to `kubectl-waitx __complete`
 - keep CI, lint, tagging, and release automation ready from the start
 
 ## Development
