@@ -5,7 +5,7 @@
 ## Current scope
 
 - provide a `kubectl waitx` entrypoint that previews or executes `kubectl wait`
-- ship `kubectl_complete-waitx` so shell completion can delegate into `kubectl-waitx --complete`
+- ship `kubectl_complete-waitx` so shell completion can delegate into `kubectl-waitx __complete`
 - keep CI, lint, tagging, and release automation ready from the start
 
 ## Development

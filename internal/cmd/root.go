@@ -14,7 +14,7 @@ import (
 func NewRootCommand() *cobra.Command {
 	configFlags := genericclioptions.NewConfigFlags(true)
 	streams := genericiooptions.IOStreams{In: os.Stdin, Out: os.Stdout, ErrOut: os.Stderr}
-	opts := newWaitxOptions(configFlags, streams, os.Args[1:])
+	opts := newWaitxOptions(configFlags, streams)
 
 	cmd := &cobra.Command{
 		Use:           "kubectl-waitx <resource> [condition]",
@@ -31,6 +31,7 @@ func NewRootCommand() *cobra.Command {
 
 	configFlags.AddFlags(cmd.PersistentFlags())
 	opts.bindFlags(cmd)
+	_ = opts.bindCompletion(cmd)
 
 	return cmd
 }

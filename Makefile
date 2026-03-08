@@ -14,7 +14,7 @@ $(BIN_DIR):
 
 build: | $(BIN_DIR)
 	go build -o $(PLUGIN_BIN) .
-	printf '%s\n' '#!/bin/sh' 'exec kubectl-waitx --complete -- "$$@"' > $(PLUGIN_COMPLETE_BIN)
+	printf '%s\n' '#!/bin/sh' 'exec kubectl-waitx __complete "$$@"' > $(PLUGIN_COMPLETE_BIN)
 	chmod +x $(PLUGIN_COMPLETE_BIN)
 
 test: build
