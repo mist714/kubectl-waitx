@@ -28,8 +28,10 @@ func TestCompletePositionalMatrix(t *testing.T) {
 	rows := []row{
 		{name: "resource-type", args: nil, toComplete: "po", candidates: []string{"SPEC:po"}, directive: cobra.ShellCompDirectiveNoFileComp},
 		{name: "resource-name", args: []string{"pod"}, toComplete: "ws-", candidates: []string{"NAME:pod:ws-"}, directive: cobra.ShellCompDirectiveNoFileComp},
-		{name: "shorthand-condition-slash", args: []string{"pod/mypod"}, toComplete: "P", candidates: []string{"Progressing"}, directive: cobra.ShellCompDirectiveNoFileComp},
+		{name: "shorthand-condition-slash", args: []string{"pod/mypod"}, toComplete: "P", candidates: []string{"PodScheduled", "Progressing"}, directive: cobra.ShellCompDirectiveNoFileComp},
 		{name: "shorthand-condition-pair", args: []string{"deployments.apps", "argo-server"}, toComplete: "A", candidates: []string{"Available"}, directive: cobra.ShellCompDirectiveNoFileComp},
+		{name: "for-context-token", args: []string{"pod", "mypod", "--for"}, toComplete: "condition=P", candidates: []string{"condition=PodScheduled", "condition=Progressing"}, directive: cobra.ShellCompDirectiveNoSpace | cobra.ShellCompDirectiveNoFileComp},
+		{name: "for-context-suffix", args: []string{"pod", "mypod", "condition=Pod"}, toComplete: "Pod", candidates: []string{"PodScheduled"}, directive: cobra.ShellCompDirectiveNoSpace | cobra.ShellCompDirectiveNoFileComp},
 	}
 
 	for _, tc := range rows {
@@ -85,6 +87,24 @@ func TestCompletionForConditionEqualsPartial(t *testing.T) {
 	require.Equal(t, "", partial)
 }
 
+func TestCompletionForConditionSeparatePartial(t *testing.T) {
+	partial, ok := completionForConditionSeparatePartial([]string{"__complete", "pod", "mypod", "--for", "condition=Pod"}, "Pod")
+	require.True(t, ok)
+	require.Equal(t, "Pod", partial)
+
+	partial, ok = completionForConditionSeparatePartial([]string{"__complete", "pod", "mypod", "--for"}, "condition=Po")
+	require.True(t, ok)
+	require.Equal(t, "Po", partial)
+}
+
+func TestCompleteForFlagSeparateConditionSuffixOnly(t *testing.T) {
+	opts := testWaitxOptions()
+	opts.completionArgsFunc = func() []string { return []string{"__complete", "pod", "mypod", "--for", "condition=Pod"} }
+	candidates, directive := opts.completeForFlag(contextCommand(), []string{"pod", "mypod"}, "Pod")
+	require.Equal(t, []string{"PodScheduled"}, candidates)
+	require.Equal(t, cobra.ShellCompDirectiveNoSpace|cobra.ShellCompDirectiveNoFileComp, directive)
+}
+
 func TestCompletionResourceArg(t *testing.T) {
 	resource, ok := completionResourceArg(nil)
 	require.False(t, ok)
@@ -128,7 +148,9 @@ func testWaitxOptions() *waitxOptions {
 	}
 	opts.conditionLookupFunc = func(_ context.Context, resourceArg string) ([]string, error) {
 		switch resourceArg {
-		case "pod/mypod", "deployments.apps/argo-server":
+		case "pod/mypod":
+			return []string{"PodScheduled", "Progressing"}, nil
+		case "deployments.apps/argo-server":
 			return []string{"Available", "Progressing"}, nil
 		default:
 			return nil, fmt.Errorf("not found")

@@ -125,6 +125,26 @@ func (o *waitxOptions) run(cmd *cobra.Command, args []string) error {
 }
 
 func (o *waitxOptions) completePositional(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
+	if len(args) > 0 && args[len(args)-1] == "--for" {
+		return o.completeForFlag(cmd, args[:len(args)-1], toComplete)
+	}
+	if hasPrefixFold(toComplete, "condition=") {
+		conditions := slices.Clone(defaultConditions)
+		if resourceArg, ok := completionResourceArg(args); ok {
+			conditions = o.completionConditions(cmd.Context(), resourceArg)
+		}
+		partial := trimPrefixFold(toComplete, "condition=")
+		return filterPrefixed(conditions, "condition="+partial, "condition="), cobra.ShellCompDirectiveNoSpace | cobra.ShellCompDirectiveNoFileComp
+	}
+	if len(args) > 0 && hasPrefixFold(args[len(args)-1], "condition=") {
+		conditions := slices.Clone(defaultConditions)
+		if resourceArg, ok := completionResourceArg(args); ok {
+			conditions = o.completionConditions(cmd.Context(), resourceArg)
+		}
+		partial := trimPrefixFold(args[len(args)-1], "condition=")
+		return filterValues(conditions, partial), cobra.ShellCompDirectiveNoSpace | cobra.ShellCompDirectiveNoFileComp
+	}
+
 	switch len(args) {
 	case 0:
 		return o.specifiedCompleter(toComplete)
@@ -150,7 +170,20 @@ func (o *waitxOptions) completeForFlag(cmd *cobra.Command, args []string, toComp
 		return filterValues(conditions, partial), cobra.ShellCompDirectiveNoSpace | cobra.ShellCompDirectiveNoFileComp
 	}
 
-	if !strings.HasPrefix(toComplete, "condition=") {
+	if partial, ok := completionForConditionSeparatePartial(o.completionArgsFunc(), toComplete); ok {
+		conditions := slices.Clone(defaultConditions)
+		if resourceArg, ok := completionResourceArg(args); ok {
+			conditions = o.completionConditions(cmd.Context(), resourceArg)
+		}
+		// Some shells pass only the suffix after "condition=" as toComplete.
+		// Return raw condition values in that case so replacement does not duplicate the prefix.
+		if !hasPrefixFold(toComplete, "condition=") {
+			return filterValues(conditions, partial), cobra.ShellCompDirectiveNoSpace | cobra.ShellCompDirectiveNoFileComp
+		}
+		return filterPrefixed(conditions, "condition="+partial, "condition="), cobra.ShellCompDirectiveNoSpace | cobra.ShellCompDirectiveNoFileComp
+	}
+
+	if !hasPrefixFold(toComplete, "condition=") {
 		return filterValues(defaultForPrefixes, toComplete), cobra.ShellCompDirectiveNoSpace | cobra.ShellCompDirectiveNoFileComp
 	}
 
@@ -158,7 +191,8 @@ func (o *waitxOptions) completeForFlag(cmd *cobra.Command, args []string, toComp
 	if resourceArg, ok := completionResourceArg(args); ok {
 		conditions = o.completionConditions(cmd.Context(), resourceArg)
 	}
-	return filterPrefixed(conditions, toComplete, "condition="), cobra.ShellCompDirectiveNoSpace | cobra.ShellCompDirectiveNoFileComp
+	partial := trimPrefixFold(toComplete, "condition=")
+	return filterPrefixed(conditions, "condition="+partial, "condition="), cobra.ShellCompDirectiveNoSpace | cobra.ShellCompDirectiveNoFileComp
 }
 
 func completionForConditionEqualsPartial(words []string) (string, bool) {
@@ -166,6 +200,20 @@ func completionForConditionEqualsPartial(words []string) (string, bool) {
 		word := words[i]
 		if strings.HasPrefix(word, "--for=condition=") {
 			return strings.TrimPrefix(word, "--for=condition="), true
+		}
+	}
+	return "", false
+}
+
+func completionForConditionSeparatePartial(words []string, toComplete string) (string, bool) {
+	if hasPrefixFold(toComplete, "condition=") {
+		return trimPrefixFold(toComplete, "condition="), true
+	}
+
+	for i := len(words) - 1; i >= 0; i-- {
+		word := words[i]
+		if hasPrefixFold(word, "condition=") {
+			return trimPrefixFold(word, "condition="), true
 		}
 	}
 	return "", false
@@ -413,4 +461,18 @@ func filterValues(values []string, partial string) []string {
 		}
 	}
 	return candidates
+}
+
+func hasPrefixFold(value, prefix string) bool {
+	if len(prefix) > len(value) {
+		return false
+	}
+	return strings.EqualFold(value[:len(prefix)], prefix)
+}
+
+func trimPrefixFold(value, prefix string) string {
+	if !hasPrefixFold(value, prefix) {
+		return value
+	}
+	return value[len(prefix):]
 }
