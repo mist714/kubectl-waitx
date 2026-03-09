@@ -4,7 +4,7 @@ project_name: kubectl-waitx
 
 builds:
   - id: kubectl_complete-waitx
-    main: ./cmd/kubectl_complete-waitx
+    main: .
     binary: kubectl_complete-waitx
     env:
       - CGO_ENABLED=0
@@ -24,7 +24,7 @@ archives:
       - goos: windows
         format: zip
     files:
-      - src: scripts/kubectl-waitx
+      - src: kubectl-waitx
         dst: kubectl-waitx
 
 checksum:
