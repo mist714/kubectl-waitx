@@ -112,11 +112,11 @@ func TestRunCompletionBinary(t *testing.T) {
 func TestCompletionResourceArg(t *testing.T) {
 	resource, ok := completionResourceArg(nil)
 	require.False(t, ok)
-	require.Equal(t, "", resource)
+	require.Empty(t, resource)
 
 	resource, ok = completionResourceArg([]string{"pod"})
 	require.False(t, ok)
-	require.Equal(t, "", resource)
+	require.Empty(t, resource)
 
 	resource, ok = completionResourceArg([]string{"pod/mypod"})
 	require.True(t, ok)

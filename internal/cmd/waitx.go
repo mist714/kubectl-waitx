@@ -2,16 +2,13 @@ package cmd
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"io"
 	"os"
 	"slices"
 	"strings"
-	"time"
 
 	"github.com/spf13/cobra"
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
 	"k8s.io/cli-runtime/pkg/genericiooptions"
 	"k8s.io/cli-runtime/pkg/resource"
@@ -59,7 +56,7 @@ type completionRequest struct {
 	conditionContext bool
 }
 
-func newWaitxOptions(configFlags *genericclioptions.ConfigFlags, streams genericiooptions.IOStreams) *waitxOptions {
+func newWaitxOptions(configFlags *genericclioptions.ConfigFlags, _ genericiooptions.IOStreams) *waitxOptions {
 	opts := &waitxOptions{
 		configFlags: configFlags,
 		factoryFunc: func() cmdutil.Factory {
@@ -75,6 +72,7 @@ func newWaitxOptions(configFlags *genericclioptions.ConfigFlags, streams generic
 	return opts
 }
 
+// RunCompletionBinary prints newline-delimited completion candidates followed by a Cobra directive line.
 func RunCompletionBinary(args []string, stdout io.Writer, stderr io.Writer) error {
 	streams := genericiooptions.IOStreams{In: os.Stdin, Out: stdout, ErrOut: stderr}
 	opts := newWaitxOptions(genericclioptions.NewConfigFlags(true), streams)
@@ -129,148 +127,6 @@ func (o *waitxOptions) completeForRequest(ctx context.Context, req completionReq
 	return filterValues(defaultForPrefixes, req.forValue)
 }
 
-func parseCompletionRequest(args []string) completionRequest {
-	req := completionRequest{}
-	if len(args) == 0 {
-		return req
-	}
-
-	for i := 0; i < len(args); i++ {
-		arg := args[i]
-		switch {
-		case strings.HasPrefix(arg, "--for=condition="):
-			req.forEquals = true
-			req.conditionContext = true
-			req.forValue = strings.TrimPrefix(arg, "--for=condition=")
-			return req
-		case strings.HasPrefix(arg, "--for="):
-			req.forEquals = true
-			req.forValue = strings.TrimPrefix(arg, "--for=")
-			req.conditionContext = strings.HasPrefix(req.forValue, "condition=")
-			if req.conditionContext {
-				req.forValue = strings.TrimPrefix(req.forValue, "condition=")
-			}
-			return req
-		case arg == "--for":
-			if i+1 >= len(args) {
-				req.forFlagName = true
-				return req
-			}
-			req.forSeparate = true
-			value := args[i+1]
-			if strings.HasPrefix(value, "condition=") {
-				req.conditionContext = true
-				req.forValue = strings.TrimPrefix(value, "condition=")
-			} else {
-				req.forValue = value
-			}
-			return req
-		case strings.HasPrefix(arg, "-"):
-			req.flagPartial = arg
-			req.toComplete = arg
-			continue
-		default:
-			req.resourceArgs = append(req.resourceArgs, arg)
-			req.toComplete = arg
-		}
-	}
-	return req
-}
-
-func completionResourceArg(args []string) (string, bool) {
-	if len(args) == 0 {
-		return "", false
-	}
-	if len(args) == 1 {
-		if strings.Contains(args[0], "/") {
-			return args[0], true
-		}
-		return "", false
-	}
-	if strings.Contains(args[0], "/") {
-		return args[0], true
-	}
-	return args[0] + "/" + args[1], true
-}
-
-func (o *waitxOptions) completionConditions(ctx context.Context, resourceArg string) []string {
-	timeoutCtx, cancel := context.WithTimeout(ctx, time.Second)
-	defer cancel()
-
-	conditions, err := o.lookupConditions(timeoutCtx, resourceArg)
-	if err != nil || len(conditions) == 0 {
-		return slices.Clone(defaultConditions)
-	}
-	return conditions
-}
-
-func (o *waitxOptions) lookupConditions(ctx context.Context, resourceArg string) ([]string, error) {
-	if o.conditionLookupFunc != nil {
-		return o.conditionLookupFunc(ctx, resourceArg)
-	}
-
-	infos, err := o.resourceInfos(ctx, resourceArg)
-	if err != nil {
-		return nil, err
-	}
-	if len(infos) == 0 {
-		return nil, errors.New("resource not found")
-	}
-
-	seen := map[string]struct{}{}
-	for _, info := range infos {
-		object, ok := info.Object.(*unstructured.Unstructured)
-		if !ok {
-			continue
-		}
-		items, found, err := unstructured.NestedSlice(object.Object, "status", "conditions")
-		if err != nil || !found {
-			continue
-		}
-		for _, item := range items {
-			entry, ok := item.(map[string]any)
-			if !ok {
-				continue
-			}
-			value, ok := entry["type"].(string)
-			if ok && value != "" {
-				seen[value] = struct{}{}
-			}
-		}
-	}
-	if len(seen) == 0 {
-		return nil, errors.New("no conditions found")
-	}
-
-	conditions := make([]string, 0, len(seen))
-	for condition := range seen {
-		conditions = append(conditions, condition)
-	}
-	slices.Sort(conditions)
-	return conditions, nil
-}
-
-func (o *waitxOptions) resourceInfos(ctx context.Context, resourceArg string) ([]*resource.Info, error) {
-	if o.resourceInfosFunc != nil {
-		return o.resourceInfosFunc(ctx, resourceArg)
-	}
-
-	factory := o.factoryFunc()
-	namespace, _, err := o.configFlags.ToRawKubeConfigLoader().Namespace()
-	if err != nil {
-		return nil, err
-	}
-	return factory.NewBuilder().
-		Unstructured().
-		DefaultNamespace().
-		NamespaceParam(namespace).
-		ResourceTypeOrNameArgs(true, resourceArg).
-		Latest().
-		Flatten().
-		Do().
-		Infos()
-}
-
 func filterPrefixed(values []string, partial, prefix string) []string {
 	candidates := make([]string, 0, len(values))
 	for _, value := range values {
@@ -290,20 +146,6 @@ func filterValues(values []string, partial string) []string {
 		}
 	}
 	return candidates
-}
-
-func hasPrefixFold(value, prefix string) bool {
-	if len(prefix) > len(value) {
-		return false
-	}
-	return strings.EqualFold(value[:len(prefix)], prefix)
-}
-
-func trimPrefixFold(value, prefix string) string {
-	if !hasPrefixFold(value, prefix) {
-		return value
-	}
-	return value[len(prefix):]
 }
 
 func renderCompletionOutput(w io.Writer, candidates []string, directive int) error {
