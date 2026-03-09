@@ -47,12 +47,12 @@ ln -sf kubectl-waitx "${KREW_ROOT:-$HOME/.krew}/bin/kubectl_complete-waitx"
 
 Download and extract a release archive containing the `kubectl-waitx` plugin binary.
 
-In the snippet below, `OS` and `ARCH` are placeholders. Replace them with values such as `darwin` or `linux`, and `amd64` or `arm64`.
+In the snippet below, `vX.Y.Z`, `OS`, and `ARCH` are placeholders. Replace them with values such as `v0.0.4`, `darwin` or `linux`, and `amd64` or `arm64`.
 
 ```sh
 INSTALL_DIR=/usr/local/bin
 curl -sSL \
-  "https://github.com/mist714/kubectl-waitx/releases/download/v0.0.1/kubectl-waitx_0.0.1_OS_ARCH.tar.gz" \
+  "https://github.com/mist714/kubectl-waitx/releases/download/vX.Y.Z/kubectl-waitx_X.Y.Z_OS_ARCH.tar.gz" \
   | tar -C "$INSTALL_DIR" -xz kubectl-waitx
 chmod +x "$INSTALL_DIR/kubectl-waitx"
 ln -sf kubectl-waitx "$INSTALL_DIR/kubectl_complete-waitx"
