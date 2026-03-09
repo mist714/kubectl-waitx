@@ -4,7 +4,6 @@ set -eu
 ROOT=$(CDPATH= cd -- "$(dirname "$0")/.." && pwd)
 PATH="$ROOT/bin:$PATH"
 
-cluster_name=${KIND_CLUSTER_NAME:-kubectl-waitx-e2e}
 namespace=kubectl-waitx-e2e
 pod_alpha=demo-alpha
 pod_beta=demo-beta
@@ -13,7 +12,6 @@ widget=demo-widget
 
 cd "$ROOT"
 
-kind create cluster --name "$cluster_name" --wait 120s
 kubectl create namespace "$namespace" --dry-run=client -o yaml | kubectl apply -f -
 kubectl config set-context --current --namespace="$namespace" >/dev/null
 kubectl apply -f hack/e2e/widget-crd.yaml

@@ -75,7 +75,8 @@ func env(t *testing.T, name string) string {
 
 func binPath(t *testing.T, name string) string {
 	t.Helper()
-	path := filepath.Clean(filepath.Join("..", "..", "bin", name))
+	path, err := filepath.Abs(filepath.Join("..", "..", "bin", name))
+	require.NoError(t, err)
 	require.FileExists(t, path, "%s is missing; run `make build` before `go test ./hack/e2e`", path)
 	return path
 }
@@ -113,8 +114,7 @@ func withBinPath(t *testing.T) []string {
 
 func binDir(t *testing.T) string {
 	t.Helper()
-	_ = binPath(t, "kubectl-waitx")
-	return filepath.Clean(filepath.Join("..", "..", "bin"))
+	return filepath.Dir(binPath(t, "kubectl-waitx"))
 }
 
 func completionLines(t *testing.T, name string, args ...string) []string {
