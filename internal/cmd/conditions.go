@@ -16,7 +16,7 @@ func (o *waitxOptions) completionConditions(ctx context.Context, resourceArg str
 
 	conditions, err := o.lookupConditions(timeoutCtx, resourceArg)
 	if err != nil || len(conditions) == 0 {
-		return slices.Clone(defaultConditions)
+		return nil
 	}
 	return conditions
 }

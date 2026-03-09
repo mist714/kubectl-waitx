@@ -13,7 +13,7 @@ import (
 )
 
 func TestFilterPrefixed(t *testing.T) {
-	completions := filterPrefixed(defaultConditions, "condition=P", "condition=")
+	completions := filterPrefixed([]string{"PodScheduled", "Progressing"}, "condition=P", "condition=")
 	require.Equal(t, []string{"condition=PodScheduled", "condition=Progressing"}, completions)
 }
 
@@ -141,6 +141,15 @@ func TestCompletionResourceArg(t *testing.T) {
 	resource, ok = completionResourceArg([]string{"pod", "mypod"})
 	require.True(t, ok)
 	require.Equal(t, "pod/mypod", resource)
+}
+
+func TestCompleteBinaryConditionWithoutResource(t *testing.T) {
+	opts := testWaitxOptions()
+
+	candidates, directive, err := opts.completeBinary(context.Background(), []string{"--for=condition="})
+	require.NoError(t, err)
+	require.Empty(t, candidates)
+	require.Equal(t, 6, directive)
 }
 
 func testWaitxOptions() *waitxOptions {

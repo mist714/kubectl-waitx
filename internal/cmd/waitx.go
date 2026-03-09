@@ -13,18 +13,6 @@ import (
 	kubectlcompletion "k8s.io/kubectl/pkg/util/completion"
 )
 
-var defaultConditions = []string{
-	"Available",
-	"Complete",
-	"ContainersReady",
-	"Degraded",
-	"Failure",
-	"Initialized",
-	"PodScheduled",
-	"Progressing",
-	"Ready",
-}
-
 var defaultForPrefixes = []string{
 	"condition=",
 	"create",
@@ -94,7 +82,7 @@ func (o *waitxOptions) completeBinary(ctx context.Context, args []string) ([]str
 
 func (o *waitxOptions) completeForRequest(ctx context.Context, req completionRequest) []string {
 	if req.conditionContext {
-		conditions := defaultConditions
+		conditions := []string(nil)
 		if resourceArg, ok := completionResourceArg(req.resourceArgs); ok {
 			conditions = o.completionConditions(ctx, resourceArg)
 		}
