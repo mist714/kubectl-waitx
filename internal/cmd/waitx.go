@@ -46,7 +46,6 @@ type waitxOptions struct {
 	conditionLookupFunc func(context.Context, string) ([]string, error)
 	specifiedCompleter  func(string) ([]string, cobra.ShellCompDirective)
 	nameCompleter       func(string, string) ([]string, cobra.ShellCompDirective)
-	completionArgsFunc  func() []string
 }
 
 type completionRequest struct {
@@ -65,12 +64,6 @@ func newWaitxOptions(configFlags *genericclioptions.ConfigFlags, streams generic
 		configFlags: configFlags,
 		factoryFunc: func() cmdutil.Factory {
 			return cmdutil.NewFactory(configFlags)
-		},
-		completionArgsFunc: func() []string {
-			if len(os.Args) <= 1 {
-				return nil
-			}
-			return os.Args[1:]
 		},
 	}
 	opts.specifiedCompleter = func(toComplete string) ([]string, cobra.ShellCompDirective) {
@@ -122,75 +115,6 @@ func (o *waitxOptions) completeBinary(ctx context.Context, args []string) ([]str
 		}
 	}
 	return nil, 4, nil
-}
-
-func (o *waitxOptions) completePositional(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
-	if len(args) > 0 && args[len(args)-1] == "--for" {
-		return o.completeForFlag(cmd, args[:len(args)-1], toComplete)
-	}
-	if hasPrefixFold(toComplete, "condition=") {
-		conditions := slices.Clone(defaultConditions)
-		if resourceArg, ok := completionResourceArg(args); ok {
-			conditions = o.completionConditions(cmd.Context(), resourceArg)
-		}
-		partial := trimPrefixFold(toComplete, "condition=")
-		return filterPrefixed(conditions, "condition="+partial, "condition="), cobra.ShellCompDirectiveNoSpace | cobra.ShellCompDirectiveNoFileComp
-	}
-	if len(args) > 0 && hasPrefixFold(args[len(args)-1], "condition=") {
-		conditions := slices.Clone(defaultConditions)
-		if resourceArg, ok := completionResourceArg(args); ok {
-			conditions = o.completionConditions(cmd.Context(), resourceArg)
-		}
-		partial := trimPrefixFold(args[len(args)-1], "condition=")
-		return filterValues(conditions, partial), cobra.ShellCompDirectiveNoSpace | cobra.ShellCompDirectiveNoFileComp
-	}
-
-	switch len(args) {
-	case 0:
-		return o.specifiedCompleter(toComplete)
-	case 1:
-		if strings.Contains(args[0], "/") {
-			return nil, cobra.ShellCompDirectiveNoFileComp
-		}
-		return o.nameCompleter(args[0], toComplete)
-	default:
-		return nil, cobra.ShellCompDirectiveNoFileComp
-	}
-	return nil, cobra.ShellCompDirectiveNoFileComp
-}
-
-func (o *waitxOptions) completeForFlag(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
-	if partial, ok := completionForConditionEqualsPartial(o.completionArgsFunc()); ok {
-		conditions := slices.Clone(defaultConditions)
-		if resourceArg, ok := completionResourceArg(args); ok {
-			conditions = o.completionConditions(cmd.Context(), resourceArg)
-		}
-		return filterValues(conditions, partial), cobra.ShellCompDirectiveNoSpace | cobra.ShellCompDirectiveNoFileComp
-	}
-
-	if partial, ok := completionForConditionSeparatePartial(o.completionArgsFunc(), toComplete); ok {
-		conditions := slices.Clone(defaultConditions)
-		if resourceArg, ok := completionResourceArg(args); ok {
-			conditions = o.completionConditions(cmd.Context(), resourceArg)
-		}
-		// Some shells pass only the suffix after "condition=" as toComplete.
-		// Return raw condition values in that case so replacement does not duplicate the prefix.
-		if !hasPrefixFold(toComplete, "condition=") {
-			return filterValues(conditions, partial), cobra.ShellCompDirectiveNoSpace | cobra.ShellCompDirectiveNoFileComp
-		}
-		return filterPrefixed(conditions, "condition="+partial, "condition="), cobra.ShellCompDirectiveNoSpace | cobra.ShellCompDirectiveNoFileComp
-	}
-
-	if !hasPrefixFold(toComplete, "condition=") {
-		return filterValues(defaultForPrefixes, toComplete), cobra.ShellCompDirectiveNoSpace | cobra.ShellCompDirectiveNoFileComp
-	}
-
-	conditions := slices.Clone(defaultConditions)
-	if resourceArg, ok := completionResourceArg(args); ok {
-		conditions = o.completionConditions(cmd.Context(), resourceArg)
-	}
-	partial := trimPrefixFold(toComplete, "condition=")
-	return filterPrefixed(conditions, "condition="+partial, "condition="), cobra.ShellCompDirectiveNoSpace | cobra.ShellCompDirectiveNoFileComp
 }
 
 func (o *waitxOptions) completeForRequest(ctx context.Context, req completionRequest) []string {
@@ -277,30 +201,6 @@ func completionLineHasTrailingSpace() bool {
 	return strings.HasSuffix(line, " ")
 }
 
-func completionForConditionEqualsPartial(words []string) (string, bool) {
-	for i := len(words) - 1; i >= 0; i-- {
-		word := words[i]
-		if strings.HasPrefix(word, "--for=condition=") {
-			return strings.TrimPrefix(word, "--for=condition="), true
-		}
-	}
-	return "", false
-}
-
-func completionForConditionSeparatePartial(words []string, toComplete string) (string, bool) {
-	if hasPrefixFold(toComplete, "condition=") {
-		return trimPrefixFold(toComplete, "condition="), true
-	}
-
-	for i := len(words) - 1; i >= 0; i-- {
-		word := words[i]
-		if hasPrefixFold(word, "condition=") {
-			return trimPrefixFold(word, "condition="), true
-		}
-	}
-	return "", false
-}
-
 func completionResourceArg(args []string) (string, bool) {
 	if len(args) == 0 {
 		return "", false
@@ -318,11 +218,6 @@ func completionResourceArg(args []string) (string, bool) {
 		return args[0], true
 	}
 	return "", false
-}
-
-func (o *waitxOptions) completeConditions(ctx context.Context, resourceArg, toComplete string) ([]string, cobra.ShellCompDirective) {
-	conditions := o.completionConditions(ctx, resourceArg)
-	return filterValues(conditions, toComplete), cobra.ShellCompDirectiveNoFileComp
 }
 
 func looksLikeResourceNamePair(args []string) bool {
