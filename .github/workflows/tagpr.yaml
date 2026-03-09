@@ -1,0 +1,41 @@
+name: tagpr
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  tagpr:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+      issues: read
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+      - id: tagpr
+        uses: Songmu/tagpr@v1.9.0
+        with:
+          config: .github/tagpr.toml
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - if: steps.tagpr.outputs.tag != ''
+        run: git fetch --force --tags
+      - if: steps.tagpr.outputs.tag != ''
+        run: git checkout ${{ steps.tagpr.outputs.tag }}
+      - if: steps.tagpr.outputs.tag != ''
+        uses: actions/setup-go@v6
+        with:
+          go-version-file: go.mod
+          cache: true
+      - if: steps.tagpr.outputs.tag != ''
+        uses: goreleaser/goreleaser-action@v6
+        with:
+          version: "~> v2"
+          args: release --clean --config .github/goreleaser.yaml
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
