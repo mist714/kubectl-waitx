@@ -2,14 +2,21 @@
 set -eu
 
 namespace=kubectl-waitx-e2e
+original_namespace="$(kubectl config view --minify --output 'jsonpath={..namespace}' 2>/dev/null || true)"
 
 cleanup() {
+	if [ -n "$original_namespace" ]; then
+		kubectl config set-context --current --namespace="$original_namespace" >/dev/null 2>&1 || true
+	else
+		kubectl config set-context --current --namespace=default >/dev/null 2>&1 || true
+	fi
 	kubectl delete namespace "$namespace" --ignore-not-found >/dev/null 2>&1 || true
 }
 
 trap cleanup EXIT
 
 kubectl create namespace "$namespace" >/dev/null
+kubectl config set-context --current --namespace="$namespace" >/dev/null
 kubectl apply -f hack/e2e/widget-crd.yaml
 kubectl apply -n "$namespace" -f - <<'EOF'
 apiVersion: v1
