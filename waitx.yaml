@@ -10,53 +10,56 @@ spec:
     kubectl-waitx improves shell completion for kubectl wait,
     especially around --for values and condition names.
   caveats: |
-    This manifest is updated after each release by the release workflow.
+    This plugin installs both kubectl-waitx and kubectl_complete-waitx.
   platforms:
-    - selector:
-        matchLabels:
-          os: darwin
-          arch: amd64
-      uri: https://github.com/mist714/kubectl-waitx/releases/download/v0.0.3/kubectl-waitx_0.0.3_darwin_amd64.tar.gz
-      sha256: TO_BE_FILLED_BY_RELEASE_WORKFLOW
-      files:
-        - from: kubectl-waitx
-          to: .
-        - from: kubectl_complete-waitx
-          to: .
-      bin: kubectl-waitx
-    - selector:
-        matchLabels:
-          os: darwin
-          arch: arm64
-      uri: https://github.com/mist714/kubectl-waitx/releases/download/v0.0.3/kubectl-waitx_0.0.3_darwin_arm64.tar.gz
-      sha256: TO_BE_FILLED_BY_RELEASE_WORKFLOW
-      files:
-        - from: kubectl-waitx
-          to: .
-        - from: kubectl_complete-waitx
-          to: .
-      bin: kubectl-waitx
-    - selector:
-        matchLabels:
-          os: linux
-          arch: amd64
-      uri: https://github.com/mist714/kubectl-waitx/releases/download/v0.0.3/kubectl-waitx_0.0.3_linux_amd64.tar.gz
-      sha256: TO_BE_FILLED_BY_RELEASE_WORKFLOW
-      files:
-        - from: kubectl-waitx
-          to: .
-        - from: kubectl_complete-waitx
-          to: .
-      bin: kubectl-waitx
-    - selector:
-        matchLabels:
-          os: linux
-          arch: arm64
-      uri: https://github.com/mist714/kubectl-waitx/releases/download/v0.0.3/kubectl-waitx_0.0.3_linux_arm64.tar.gz
-      sha256: TO_BE_FILLED_BY_RELEASE_WORKFLOW
-      files:
-        - from: kubectl-waitx
-          to: .
-        - from: kubectl_complete-waitx
-          to: .
-      bin: kubectl-waitx
+  - selector:
+      matchLabels:
+        os: darwin
+        arch: amd64
+    uri: https://github.com/mist714/kubectl-waitx/releases/download/v0.0.3/kubectl-waitx_0.0.3_darwin_amd64.tar.gz
+    sha256: fb2a9f7376b2e2b42bbc04b1c0d0c9bb2aaf3b859b6ada1e4c252d7462501ee9
+    files:
+      - from: kubectl-waitx
+        to: .
+      - from: kubectl_complete-waitx
+        to: .
+    bin: kubectl-waitx
+
+  - selector:
+      matchLabels:
+        os: darwin
+        arch: arm64
+    uri: https://github.com/mist714/kubectl-waitx/releases/download/v0.0.3/kubectl-waitx_0.0.3_darwin_arm64.tar.gz
+    sha256: 313cd4e07ad7cb0e1c200db378c076589d3a0a401a265eabe5e8cfcf2781dd82
+    files:
+      - from: kubectl-waitx
+        to: .
+      - from: kubectl_complete-waitx
+        to: .
+    bin: kubectl-waitx
+
+  - selector:
+      matchLabels:
+        os: linux
+        arch: amd64
+    uri: https://github.com/mist714/kubectl-waitx/releases/download/v0.0.3/kubectl-waitx_0.0.3_linux_amd64.tar.gz
+    sha256: f71f1bf48d78b4c23b78f5ff24211c5c160a7f1411207699901db58fc1e36bdb
+    files:
+      - from: kubectl-waitx
+        to: .
+      - from: kubectl_complete-waitx
+        to: .
+    bin: kubectl-waitx
+
+  - selector:
+      matchLabels:
+        os: linux
+        arch: arm64
+    uri: https://github.com/mist714/kubectl-waitx/releases/download/v0.0.3/kubectl-waitx_0.0.3_linux_arm64.tar.gz
+    sha256: 8830b98d234cbe227ee0857ac8491a8b161f35df3a09064d926a3f6c1ffaaa19
+    files:
+      - from: kubectl-waitx
+        to: .
+      - from: kubectl_complete-waitx
+        to: .
+    bin: kubectl-waitx
