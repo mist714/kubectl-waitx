@@ -78,7 +78,7 @@ func newWaitxOptions(configFlags *genericclioptions.ConfigFlags, streams generic
 func RunCompletionBinary(args []string, stdout io.Writer, stderr io.Writer) error {
 	streams := genericiooptions.IOStreams{In: os.Stdin, Out: stdout, ErrOut: stderr}
 	opts := newWaitxOptions(genericclioptions.NewConfigFlags(true), streams)
-	candidates, directive, err := opts.completeBinary(context.Background(), completionInputArgs(args))
+	candidates, directive, err := opts.completeBinary(context.Background(), args)
 	if err != nil {
 		return err
 	}
@@ -106,15 +106,12 @@ func (o *waitxOptions) completeBinary(ctx context.Context, args []string) ([]str
 		candidates, directive := o.specifiedCompleter(req.toComplete)
 		return candidates, int(directive), nil
 	default:
-		if looksLikeResourceNamePair(req.resourceArgs[:2]) {
-			if len(req.resourceArgs) == 2 {
-				candidates, directive := o.nameCompleter(req.resourceArgs[0], req.resourceArgs[1])
-				return candidates, int(directive), nil
-			}
-			return nil, 4, nil
+		if len(req.resourceArgs) == 2 {
+			candidates, directive := o.nameCompleter(req.resourceArgs[0], req.resourceArgs[1])
+			return candidates, int(directive), nil
 		}
+		return nil, 4, nil
 	}
-	return nil, 4, nil
 }
 
 func (o *waitxOptions) completeForRequest(ctx context.Context, req completionRequest) []string {
@@ -180,27 +177,6 @@ func parseCompletionRequest(args []string) completionRequest {
 	return req
 }
 
-func completionInputArgs(args []string) []string {
-	if len(args) == 0 {
-		return args
-	}
-	if !completionLineHasTrailingSpace() {
-		return args
-	}
-	if args[len(args)-1] == "" {
-		return args
-	}
-	return append(slices.Clone(args), "")
-}
-
-func completionLineHasTrailingSpace() bool {
-	line := os.Getenv("COMP_LINE")
-	if line == "" {
-		return false
-	}
-	return strings.HasSuffix(line, " ")
-}
-
 func completionResourceArg(args []string) (string, bool) {
 	if len(args) == 0 {
 		return "", false
@@ -211,38 +187,10 @@ func completionResourceArg(args []string) (string, bool) {
 		}
 		return "", false
 	}
-	if looksLikeResourceNamePair(args[:2]) {
-		return args[0] + "/" + args[1], true
-	}
 	if strings.Contains(args[0], "/") {
 		return args[0], true
 	}
-	return "", false
-}
-
-func looksLikeResourceNamePair(args []string) bool {
-	if len(args) != 2 {
-		return false
-	}
-	first := args[0]
-	second := args[1]
-	if strings.Contains(first, "/") || strings.Contains(second, "/") {
-		return false
-	}
-	if strings.Contains(second, "=") {
-		return false
-	}
-	if isLikelyConditionToken(second) {
-		return false
-	}
-	return true
-}
-
-func isLikelyConditionToken(value string) bool {
-	if strings.Contains(value, "=") {
-		return true
-	}
-	return slices.Contains(defaultConditions, value)
+	return args[0] + "/" + args[1], true
 }
 
 func (o *waitxOptions) completionConditions(ctx context.Context, resourceArg string) []string {

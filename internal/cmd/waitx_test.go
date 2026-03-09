@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"os"
 	"testing"
 
 	"github.com/spf13/cobra"
@@ -38,17 +37,6 @@ func TestParseCompletionRequest(t *testing.T) {
 	req = parseCompletionRequest([]string{"pod", "mypod", "--f"})
 	require.Equal(t, []string{"pod", "mypod"}, req.resourceArgs)
 	require.Equal(t, "--f", req.flagPartial)
-}
-
-func TestCompletionInputArgsTrailingSpace(t *testing.T) {
-	t.Setenv("COMP_LINE", "kubectl-waitx pod ")
-	require.Equal(t, []string{"pod", ""}, completionInputArgs([]string{"pod"}))
-
-	t.Setenv("COMP_LINE", "kubectl-waitx pod ws-")
-	require.Equal(t, []string{"pod", "ws-"}, completionInputArgs([]string{"pod", "ws-"}))
-
-	_ = os.Unsetenv("COMP_LINE")
-	require.Equal(t, []string{"pod"}, completionInputArgs([]string{"pod"}))
 }
 
 func TestCompleteBinaryConditionForms(t *testing.T) {
@@ -137,12 +125,6 @@ func TestCompletionResourceArg(t *testing.T) {
 	resource, ok = completionResourceArg([]string{"pod", "mypod"})
 	require.True(t, ok)
 	require.Equal(t, "pod/mypod", resource)
-}
-
-func TestLooksLikeResourceNamePair(t *testing.T) {
-	require.True(t, looksLikeResourceNamePair([]string{"deployments.apps", "argo-server"}))
-	require.False(t, looksLikeResourceNamePair([]string{"pod/mypod", "Ready"}))
-	require.False(t, looksLikeResourceNamePair([]string{"pod", "Ready"}))
 }
 
 func testWaitxOptions() *waitxOptions {
