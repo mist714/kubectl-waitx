@@ -47,22 +47,22 @@ func TestCompleteBinaryConditionForms(t *testing.T) {
 	candidates, directive, err := opts.completeBinary(context.Background(), []string{"pod", "mypod", "--for=condition=P"})
 	require.NoError(t, err)
 	require.Equal(t, []string{"PodScheduled", "Progressing"}, candidates)
-	require.Equal(t, 6, directive)
+	require.Equal(t, shellCompDirectiveNoFileCompNoSpace, directive)
 
 	candidates, directive, err = opts.completeBinary(context.Background(), []string{"pod", "mypod", "--for=condition="})
 	require.NoError(t, err)
 	require.Equal(t, []string{"PodScheduled", "Progressing"}, candidates)
-	require.Equal(t, 6, directive)
+	require.Equal(t, shellCompDirectiveNoFileCompNoSpace, directive)
 
 	candidates, directive, err = opts.completeBinary(context.Background(), []string{"pod", "mypod", "--for", "condition="})
 	require.NoError(t, err)
 	require.Equal(t, []string{"condition=PodScheduled", "condition=Progressing"}, candidates)
-	require.Equal(t, 6, directive)
+	require.Equal(t, shellCompDirectiveNoFileCompNoSpace, directive)
 
 	candidates, directive, err = opts.completeBinary(context.Background(), []string{"pod", "mypod", "--for", "condition=P"})
 	require.NoError(t, err)
 	require.Equal(t, []string{"condition=PodScheduled", "condition=Progressing"}, candidates)
-	require.Equal(t, 6, directive)
+	require.Equal(t, shellCompDirectiveNoFileCompNoSpace, directive)
 }
 
 func TestCompleteBinaryForFlagName(t *testing.T) {
@@ -70,7 +70,7 @@ func TestCompleteBinaryForFlagName(t *testing.T) {
 	candidates, directive, err := opts.completeBinary(context.Background(), []string{"pod", "mypod", "--for"})
 	require.NoError(t, err)
 	require.Equal(t, []string{"--for="}, candidates)
-	require.Equal(t, 6, directive)
+	require.Equal(t, shellCompDirectiveNoFileCompNoSpace, directive)
 }
 
 func TestCompleteBinaryFlagPartial(t *testing.T) {
@@ -78,7 +78,7 @@ func TestCompleteBinaryFlagPartial(t *testing.T) {
 	candidates, directive, err := opts.completeBinary(context.Background(), []string{"pod", "mypod", "--f"})
 	require.NoError(t, err)
 	require.Equal(t, []string{"--for"}, candidates)
-	require.Equal(t, 6, directive)
+	require.Equal(t, shellCompDirectiveNoFileCompNoSpace, directive)
 }
 
 func TestCompleteBinaryResourceName(t *testing.T) {
@@ -86,7 +86,7 @@ func TestCompleteBinaryResourceName(t *testing.T) {
 	candidates, directive, err := opts.completeBinary(context.Background(), []string{"pod", "ws-"})
 	require.NoError(t, err)
 	require.Equal(t, []string{"RES:pod:ws-"}, candidates)
-	require.Equal(t, 4, directive)
+	require.Equal(t, shellCompDirectiveNoFileComp, directive)
 }
 
 func TestCompleteBinaryNoDefaultConditionAfterResource(t *testing.T) {
@@ -94,7 +94,7 @@ func TestCompleteBinaryNoDefaultConditionAfterResource(t *testing.T) {
 	candidates, directive, err := opts.completeBinary(context.Background(), []string{"pod", "mypod", ""})
 	require.NoError(t, err)
 	require.Equal(t, []string{"RES:pod:mypod:"}, candidates)
-	require.Equal(t, 4, directive)
+	require.Equal(t, shellCompDirectiveNoFileComp, directive)
 }
 
 func TestCompleteBinaryResourceType(t *testing.T) {
@@ -102,7 +102,7 @@ func TestCompleteBinaryResourceType(t *testing.T) {
 	candidates, directive, err := opts.completeBinary(context.Background(), []string{"po"})
 	require.NoError(t, err)
 	require.Equal(t, []string{"RES::po"}, candidates)
-	require.Equal(t, 4, directive)
+	require.Equal(t, shellCompDirectiveNoFileComp, directive)
 }
 
 func TestCompleteBinaryMultipleResourceNames(t *testing.T) {
@@ -110,7 +110,7 @@ func TestCompleteBinaryMultipleResourceNames(t *testing.T) {
 	candidates, directive, err := opts.completeBinary(context.Background(), []string{"pod", "a", "b"})
 	require.NoError(t, err)
 	require.Equal(t, []string{"RES:pod:a:b"}, candidates)
-	require.Equal(t, 4, directive)
+	require.Equal(t, shellCompDirectiveNoFileComp, directive)
 }
 
 func TestCompleteBinaryMultipleQualifiedResources(t *testing.T) {
@@ -118,7 +118,7 @@ func TestCompleteBinaryMultipleQualifiedResources(t *testing.T) {
 	candidates, directive, err := opts.completeBinary(context.Background(), []string{"pod/a", "deploy/b"})
 	require.NoError(t, err)
 	require.Equal(t, []string{"RES:pod/a:deploy/b"}, candidates)
-	require.Equal(t, 4, directive)
+	require.Equal(t, shellCompDirectiveNoFileComp, directive)
 }
 
 func TestRunCompletionBinary(t *testing.T) {
@@ -152,7 +152,7 @@ func TestCompleteBinaryConditionWithoutResource(t *testing.T) {
 	candidates, directive, err := opts.completeBinary(context.Background(), []string{"--for=condition="})
 	require.NoError(t, err)
 	require.Empty(t, candidates)
-	require.Equal(t, 6, directive)
+	require.Equal(t, shellCompDirectiveNoFileCompNoSpace, directive)
 }
 
 func testWaitxOptions() *waitxOptions {

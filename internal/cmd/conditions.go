@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"slices"
+	"strings"
 
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/cli-runtime/pkg/resource"
@@ -24,23 +25,8 @@ func (o *waitxOptions) lookupConditions(ctx context.Context, resourceArg string)
 
 	seen := map[string]struct{}{}
 	for _, info := range infos {
-		object, ok := info.Object.(*unstructured.Unstructured)
-		if !ok {
-			continue
-		}
-		items, found, err := unstructured.NestedSlice(object.Object, "status", "conditions")
-		if err != nil || !found {
-			continue
-		}
-		for _, item := range items {
-			entry, ok := item.(map[string]any)
-			if !ok {
-				continue
-			}
-			value, ok := entry["type"].(string)
-			if ok && value != "" {
-				seen[value] = struct{}{}
-			}
+		for _, condition := range extractConditionTypes(info.Object) {
+			seen[condition] = struct{}{}
 		}
 	}
 	if len(seen) == 0 {
@@ -53,6 +39,47 @@ func (o *waitxOptions) lookupConditions(ctx context.Context, resourceArg string)
 	}
 	slices.Sort(conditions)
 	return conditions, nil
+}
+
+func completionResourceArg(args []string) (string, bool) {
+	if len(args) == 0 {
+		return "", false
+	}
+	if len(args) == 1 {
+		if strings.Contains(args[0], "/") {
+			return args[0], true
+		}
+		return "", false
+	}
+	if strings.Contains(args[0], "/") {
+		return args[0], true
+	}
+	return args[0] + "/" + args[1], true
+}
+
+func extractConditionTypes(object any) []string {
+	unstructuredObject, ok := object.(*unstructured.Unstructured)
+	if !ok {
+		return nil
+	}
+
+	items, found, err := unstructured.NestedSlice(unstructuredObject.Object, "status", "conditions")
+	if err != nil || !found {
+		return nil
+	}
+
+	conditions := make([]string, 0, len(items))
+	for _, item := range items {
+		entry, ok := item.(map[string]any)
+		if !ok {
+			continue
+		}
+		value, ok := entry["type"].(string)
+		if ok && value != "" {
+			conditions = append(conditions, value)
+		}
+	}
+	return conditions
 }
 
 func (o *waitxOptions) resourceInfos(ctx context.Context, resourceArg string) ([]*resource.Info, error) {

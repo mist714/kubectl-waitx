@@ -50,19 +50,3 @@ func parseForValue(value string, separate bool) (conditionContext bool, forValue
 	}
 	return false, value, ""
 }
-
-func completionResourceArg(args []string) (string, bool) {
-	if len(args) == 0 {
-		return "", false
-	}
-	if len(args) == 1 {
-		if strings.Contains(args[0], "/") {
-			return args[0], true
-		}
-		return "", false
-	}
-	if strings.Contains(args[0], "/") {
-		return args[0], true
-	}
-	return args[0] + "/" + args[1], true
-}

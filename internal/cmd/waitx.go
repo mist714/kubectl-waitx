@@ -15,11 +15,17 @@ import (
 )
 
 var defaultForPrefixes = []string{
-	"condition=",
 	"create",
 	"delete",
 	"jsonpath=",
 }
+
+const (
+	conditionValuePrefix = "condition="
+
+	shellCompDirectiveNoFileComp        = int(cobra.ShellCompDirectiveNoFileComp)
+	shellCompDirectiveNoFileCompNoSpace = int(cobra.ShellCompDirectiveNoFileComp | cobra.ShellCompDirectiveNoSpace)
+)
 
 type waitxOptions struct {
 	configFlags *genericclioptions.ConfigFlags
@@ -75,13 +81,13 @@ func (o *waitxOptions) completeBinary(ctx context.Context, args []string) ([]str
 	req := parseCompletionRequest(args)
 
 	if req.mode == completionModeForValue {
-		return o.completeForRequest(ctx, req), 6, nil
+		return o.completeForRequest(ctx, req), shellCompDirectiveNoFileCompNoSpace, nil
 	}
 	if req.mode == completionModeForFlag {
-		return []string{"--for="}, 6, nil
+		return []string{"--for="}, shellCompDirectiveNoFileCompNoSpace, nil
 	}
 	if req.mode == completionModeFlagPartial {
-		return filterValues([]string{"--for"}, req.toComplete), 6, nil
+		return filterValues([]string{"--for"}, req.toComplete), shellCompDirectiveNoFileCompNoSpace, nil
 	}
 
 	candidates, directive := o.resourceCompleter(completedResourceArgs(req.resourceArgs), req.toComplete)
@@ -90,20 +96,26 @@ func (o *waitxOptions) completeBinary(ctx context.Context, args []string) ([]str
 
 func (o *waitxOptions) completeForRequest(ctx context.Context, req completionRequest) []string {
 	if req.conditionContext {
-		conditions := []string(nil)
-		if resourceArg, ok := completionResourceArg(req.resourceArgs); ok {
-			timeoutCtx, cancel := context.WithTimeout(ctx, time.Second)
-			defer cancel()
-
-			conditions, _ = o.lookupConditions(timeoutCtx, resourceArg)
-		}
-		if req.valuePrefix == "" {
-			return filterValues(conditions, req.forValue)
-		}
-		return filterPrefixed(conditions, req.valuePrefix+req.forValue, req.valuePrefix)
+		return o.completeConditionValue(ctx, req)
 	}
 
-	return filterValues(defaultForPrefixes, req.forValue)
+	return filterValues(append([]string{conditionValuePrefix}, defaultForPrefixes...), req.forValue)
+}
+
+func (o *waitxOptions) completeConditionValue(ctx context.Context, req completionRequest) []string {
+	resourceArg, ok := completionResourceArg(req.resourceArgs)
+	if !ok {
+		return nil
+	}
+
+	timeoutCtx, cancel := context.WithTimeout(ctx, time.Second)
+	defer cancel()
+
+	conditions, _ := o.lookupConditions(timeoutCtx, resourceArg)
+	if req.valuePrefix == "" {
+		return filterValues(conditions, req.forValue)
+	}
+	return filterPrefixed(conditions, req.valuePrefix+req.forValue, req.valuePrefix)
 }
 
 func filterPrefixed(values []string, partial, prefix string) []string {
