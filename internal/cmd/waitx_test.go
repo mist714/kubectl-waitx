@@ -4,12 +4,12 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"strings"
 	"testing"
 
 	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/require"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
-	"k8s.io/cli-runtime/pkg/genericiooptions"
 )
 
 func TestFilterPrefixed(t *testing.T) {
@@ -82,7 +82,7 @@ func TestCompleteBinaryResourceName(t *testing.T) {
 	opts := testWaitxOptions()
 	candidates, directive, err := opts.completeBinary(context.Background(), []string{"pod", "ws-"})
 	require.NoError(t, err)
-	require.Equal(t, []string{"NAME:pod:ws-"}, candidates)
+	require.Equal(t, []string{"RES:pod:ws-"}, candidates)
 	require.Equal(t, 4, directive)
 }
 
@@ -90,7 +90,7 @@ func TestCompleteBinaryNoDefaultConditionAfterResource(t *testing.T) {
 	opts := testWaitxOptions()
 	candidates, directive, err := opts.completeBinary(context.Background(), []string{"pod", "mypod", ""})
 	require.NoError(t, err)
-	require.Nil(t, candidates)
+	require.Equal(t, []string{"RES:pod:mypod:"}, candidates)
 	require.Equal(t, 4, directive)
 }
 
@@ -98,7 +98,23 @@ func TestCompleteBinaryResourceType(t *testing.T) {
 	opts := testWaitxOptions()
 	candidates, directive, err := opts.completeBinary(context.Background(), []string{"po"})
 	require.NoError(t, err)
-	require.Equal(t, []string{"SPEC:po"}, candidates)
+	require.Equal(t, []string{"RES::po"}, candidates)
+	require.Equal(t, 4, directive)
+}
+
+func TestCompleteBinaryMultipleResourceNames(t *testing.T) {
+	opts := testWaitxOptions()
+	candidates, directive, err := opts.completeBinary(context.Background(), []string{"pod", "a", "b"})
+	require.NoError(t, err)
+	require.Equal(t, []string{"RES:pod:a:b"}, candidates)
+	require.Equal(t, 4, directive)
+}
+
+func TestCompleteBinaryMultipleQualifiedResources(t *testing.T) {
+	opts := testWaitxOptions()
+	candidates, directive, err := opts.completeBinary(context.Background(), []string{"pod/a", "deploy/b"})
+	require.NoError(t, err)
+	require.Equal(t, []string{"RES:pod/a:deploy/b"}, candidates)
 	require.Equal(t, 4, directive)
 }
 
@@ -128,12 +144,9 @@ func TestCompletionResourceArg(t *testing.T) {
 }
 
 func testWaitxOptions() *waitxOptions {
-	opts := newWaitxOptions(genericclioptions.NewConfigFlags(true), genericiooptions.IOStreams{})
-	opts.specifiedCompleter = func(toComplete string) ([]string, cobra.ShellCompDirective) {
-		return []string{"SPEC:" + toComplete}, cobra.ShellCompDirectiveNoFileComp
-	}
-	opts.nameCompleter = func(resourceType, toComplete string) ([]string, cobra.ShellCompDirective) {
-		return []string{fmt.Sprintf("NAME:%s:%s", resourceType, toComplete)}, cobra.ShellCompDirectiveNoFileComp
+	opts := newWaitxOptions(genericclioptions.NewConfigFlags(true))
+	opts.resourceCompleter = func(args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
+		return []string{fmt.Sprintf("RES:%s:%s", joinArgs(args), toComplete)}, cobra.ShellCompDirectiveNoFileComp
 	}
 	opts.conditionLookupFunc = func(_ context.Context, resourceArg string) ([]string, error) {
 		switch resourceArg {
@@ -146,4 +159,8 @@ func testWaitxOptions() *waitxOptions {
 		}
 	}
 	return opts
+}
+
+func joinArgs(args []string) string {
+	return strings.Join(args, ":")
 }

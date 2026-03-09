@@ -4,13 +4,10 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"os"
-	"slices"
 	"strings"
 
 	"github.com/spf13/cobra"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
-	"k8s.io/cli-runtime/pkg/genericiooptions"
 	"k8s.io/cli-runtime/pkg/resource"
 	cmdutil "k8s.io/kubectl/pkg/cmd/util"
 	kubectlcompletion "k8s.io/kubectl/pkg/util/completion"
@@ -41,8 +38,7 @@ type waitxOptions struct {
 	factoryFunc         func() cmdutil.Factory
 	resourceInfosFunc   func(context.Context, string) ([]*resource.Info, error)
 	conditionLookupFunc func(context.Context, string) ([]string, error)
-	specifiedCompleter  func(string) ([]string, cobra.ShellCompDirective)
-	nameCompleter       func(string, string) ([]string, cobra.ShellCompDirective)
+	resourceCompleter   func([]string, string) ([]string, cobra.ShellCompDirective)
 }
 
 type completionRequest struct {
@@ -56,26 +52,22 @@ type completionRequest struct {
 	conditionContext bool
 }
 
-func newWaitxOptions(configFlags *genericclioptions.ConfigFlags, _ genericiooptions.IOStreams) *waitxOptions {
+func newWaitxOptions(configFlags *genericclioptions.ConfigFlags) *waitxOptions {
 	opts := &waitxOptions{
 		configFlags: configFlags,
 		factoryFunc: func() cmdutil.Factory {
 			return cmdutil.NewFactory(configFlags)
 		},
 	}
-	opts.specifiedCompleter = func(toComplete string) ([]string, cobra.ShellCompDirective) {
-		return kubectlcompletion.SpecifiedResourceTypeAndNameNoRepeatCompletionFunc(opts.factoryFunc(), nil)(&cobra.Command{}, nil, toComplete)
-	}
-	opts.nameCompleter = func(resourceType, toComplete string) ([]string, cobra.ShellCompDirective) {
-		return kubectlcompletion.ResourceNameCompletionFunc(opts.factoryFunc(), resourceType)(&cobra.Command{}, nil, toComplete)
+	opts.resourceCompleter = func(args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
+		return kubectlcompletion.SpecifiedResourceTypeAndNameCompletionFunc(opts.factoryFunc(), nil)(&cobra.Command{}, args, toComplete)
 	}
 	return opts
 }
 
 // RunCompletionBinary prints newline-delimited completion candidates followed by a Cobra directive line.
-func RunCompletionBinary(args []string, stdout io.Writer, stderr io.Writer) error {
-	streams := genericiooptions.IOStreams{In: os.Stdin, Out: stdout, ErrOut: stderr}
-	opts := newWaitxOptions(genericclioptions.NewConfigFlags(true), streams)
+func RunCompletionBinary(args []string, stdout io.Writer, _ io.Writer) error {
+	opts := newWaitxOptions(genericclioptions.NewConfigFlags(true))
 	candidates, directive, err := opts.completeBinary(context.Background(), args)
 	if err != nil {
 		return err
@@ -96,25 +88,13 @@ func (o *waitxOptions) completeBinary(ctx context.Context, args []string) ([]str
 		return filterValues([]string{"--for"}, req.flagPartial), 6, nil
 	}
 
-	switch len(req.resourceArgs) {
-	case 0:
-		candidates, directive := o.specifiedCompleter(req.toComplete)
-		return candidates, int(directive), nil
-	case 1:
-		candidates, directive := o.specifiedCompleter(req.toComplete)
-		return candidates, int(directive), nil
-	default:
-		if len(req.resourceArgs) == 2 {
-			candidates, directive := o.nameCompleter(req.resourceArgs[0], req.resourceArgs[1])
-			return candidates, int(directive), nil
-		}
-		return nil, 4, nil
-	}
+	candidates, directive := o.resourceCompleter(completedResourceArgs(req.resourceArgs), req.toComplete)
+	return candidates, int(directive), nil
 }
 
 func (o *waitxOptions) completeForRequest(ctx context.Context, req completionRequest) []string {
 	if req.conditionContext {
-		conditions := slices.Clone(defaultConditions)
+		conditions := defaultConditions
 		if resourceArg, ok := completionResourceArg(req.resourceArgs); ok {
 			conditions = o.completionConditions(ctx, resourceArg)
 		}
@@ -146,6 +126,13 @@ func filterValues(values []string, partial string) []string {
 		}
 	}
 	return candidates
+}
+
+func completedResourceArgs(args []string) []string {
+	if len(args) == 0 {
+		return nil
+	}
+	return args[:len(args)-1]
 }
 
 func renderCompletionOutput(w io.Writer, candidates []string, directive int) error {
