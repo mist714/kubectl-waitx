@@ -1,6 +1,7 @@
 GO_TEST_FLAGS ?= -count=1 -v
 BIN_DIR := bin
 PLUGIN_BIN := $(BIN_DIR)/kubectl-waitx
+PLUGIN_COMPLETE_BIN := $(BIN_DIR)/kubectl_complete-waitx
 PREFIX ?= $(HOME)/.local/bin
 
 .PHONY: deps build install test e2e fmt lint clean
@@ -13,8 +14,9 @@ $(BIN_DIR):
 	mkdir -p $(BIN_DIR)
 
 build: | $(BIN_DIR)
-	rm -f $(PLUGIN_BIN)
+	rm -f $(PLUGIN_BIN) $(PLUGIN_COMPLETE_BIN)
 	go build -o $(PLUGIN_BIN) .
+	ln -sf kubectl-waitx $(PLUGIN_COMPLETE_BIN)
 
 install: build
 	mkdir -p $(PREFIX)
