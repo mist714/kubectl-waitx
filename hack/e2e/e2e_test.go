@@ -19,6 +19,7 @@ func TestE2E(t *testing.T) {
 		t.Skip("e2e environment is not configured")
 	}
 
+	_ = binPath(t, "kubectl_complete-waitx")
 	namespace := env(t, "NAMESPACE")
 	podAlpha := env(t, "POD_ALPHA")
 	podBeta := env(t, "POD_BETA")
@@ -26,40 +27,40 @@ func TestE2E(t *testing.T) {
 	widget := env(t, "WIDGET")
 
 	t.Run("resource kinds", func(t *testing.T) {
-		assertCompletionContains(t, "pods", "kubectl", "__complete", "waitx", "po")
-		assertCompletionContains(t, "deployments.apps", "kubectl", "__complete", "waitx", "de")
-		assertCompletionContains(t, "widgets.testing.waitx.dev", "kubectl", "__complete", "waitx", "wid")
+		assertKubectlCompletionContains(t, "pods", "po")
+		assertKubectlCompletionContains(t, "deployments.apps", "de")
+		assertKubectlCompletionContains(t, "widgets.testing.waitx.dev", "wid")
 	})
 
 	t.Run("resource names", func(t *testing.T) {
-		assertCompletionContains(t, podAlpha, "kubectl", "__complete", "waitx", "pod", "demo-a")
-		assertCompletionContains(t, podBeta, "kubectl", "__complete", "waitx", "pod", podAlpha, "demo-b")
-		assertCompletionContains(t, "pod/"+podBeta, "kubectl", "__complete", "waitx", "pod/"+podAlpha, "pod/demo-b")
+		assertKubectlCompletionContains(t, podAlpha, "pod", "demo-a")
+		assertKubectlCompletionContains(t, podBeta, "pod", podAlpha, "demo-b")
+		assertKubectlCompletionContains(t, "pod/"+podBeta, "pod/"+podAlpha, "pod/demo-b")
 	})
 
 	t.Run("for flag", func(t *testing.T) {
-		assertCompletionContains(t, "--for", "kubectl", "__complete", "waitx", "pod", podAlpha, "--f")
-		assertCompletionContains(t, "condition=", "kubectl", "__complete", "waitx", "pod", podAlpha, "--for=")
-		assertCompletionContains(t, "create", "kubectl", "__complete", "waitx", "pod", podAlpha, "--for=")
-		assertCompletionContains(t, "delete", "kubectl", "__complete", "waitx", "pod", podAlpha, "--for=")
-		assertCompletionContains(t, "jsonpath=", "kubectl", "__complete", "waitx", "pod", podAlpha, "--for=")
+		assertKubectlCompletionContains(t, "--for", "pod", podAlpha, "--f")
+		assertKubectlCompletionContains(t, "condition=", "pod", podAlpha, "--for=")
+		assertKubectlCompletionContains(t, "create", "pod", podAlpha, "--for=")
+		assertKubectlCompletionContains(t, "delete", "pod", podAlpha, "--for=")
+		assertKubectlCompletionContains(t, "jsonpath=", "pod", podAlpha, "--for=")
 	})
 
 	t.Run("builtin conditions", func(t *testing.T) {
-		assertCompletionContains(t, "PodScheduled", "kubectl", "__complete", "waitx", "pod", podAlpha, "--for=condition=P")
-		assertCompletionContains(t, "PodReadyToStartContainers", "kubectl", "__complete", "waitx", "pod", podAlpha, "--for=condition=PodR")
-		assertCompletionContains(t, "Available", "kubectl", "__complete", "waitx", "deployment", deployment, "--for=condition=A")
+		assertKubectlCompletionContains(t, "PodScheduled", "pod", podAlpha, "--for=condition=P")
+		assertKubectlCompletionContains(t, "PodReadyToStartContainers", "pod", podAlpha, "--for=condition=PodR")
+		assertKubectlCompletionContains(t, "Available", "deployment", deployment, "--for=condition=A")
 	})
 
 	t.Run("custom resource conditions", func(t *testing.T) {
-		assertCompletionContains(t, widget, "kubectl", "__complete", "waitx", "widget", "demo-")
-		assertCompletionContains(t, "GadgetReady", "kubectl", "__complete", "waitx", "widget", widget, "--for=condition=G")
-		assertCompletionContains(t, "PartsInstalled", "kubectl", "__complete", "waitx", "widget", widget, "--for=condition=P")
+		assertKubectlCompletionContains(t, widget, "widget", "demo-")
+		assertKubectlCompletionContains(t, "GadgetReady", "widget", widget, "--for=condition=G")
+		assertKubectlCompletionContains(t, "PartsInstalled", "widget", widget, "--for=condition=P")
 	})
 
 	t.Run("empty", func(t *testing.T) {
-		assertCompletionEmpty(t, "kubectl", "__complete", "waitx", "pod", "missing-", "--for=condition=P")
-		assertCompletionEmpty(t, "kubectl", "__complete", "waitx", "pod", podAlpha, "--for=condition=Missing")
+		assertKubectlCompletionEmpty(t, "pod", "missing-", "--for=condition=P")
+		assertKubectlCompletionEmpty(t, "pod", podAlpha, "--for=condition=Missing")
 	})
 
 	_ = namespace
@@ -82,12 +83,32 @@ func binPath(t *testing.T, name string) string {
 func execOutput(t *testing.T, name string, args ...string) (string, string, error) {
 	t.Helper()
 	cmd := exec.Command(name, args...)
-	cmd.Env = append(os.Environ(), "PATH="+binDir(t)+string(os.PathListSeparator)+os.Getenv("PATH"))
+	cmd.Env = withBinPath(t)
 	var stdout, stderr bytes.Buffer
 	cmd.Stdout = &stdout
 	cmd.Stderr = &stderr
 	err := cmd.Run()
 	return stdout.String(), stderr.String(), err
+}
+
+func withBinPath(t *testing.T) []string {
+	t.Helper()
+	pathPrefix := binDir(t) + string(os.PathListSeparator) + os.Getenv("PATH")
+	env := os.Environ()
+	out := make([]string, 0, len(env)+1)
+	replaced := false
+	for _, entry := range env {
+		if strings.HasPrefix(entry, "PATH=") {
+			out = append(out, "PATH="+pathPrefix)
+			replaced = true
+			continue
+		}
+		out = append(out, entry)
+	}
+	if !replaced {
+		out = append(out, "PATH="+pathPrefix)
+	}
+	return out
 }
 
 func binDir(t *testing.T) string {
@@ -117,7 +138,17 @@ func assertCompletionContains(t *testing.T, want string, name string, args ...st
 	require.Contains(t, completionLines(t, name, args...), want)
 }
 
+func assertKubectlCompletionContains(t *testing.T, want string, args ...string) {
+	t.Helper()
+	assertCompletionContains(t, want, "kubectl", append([]string{"__complete", "waitx"}, args...)...)
+}
+
 func assertCompletionEmpty(t *testing.T, name string, args ...string) {
 	t.Helper()
 	require.Empty(t, completionLines(t, name, args...))
+}
+
+func assertKubectlCompletionEmpty(t *testing.T, args ...string) {
+	t.Helper()
+	assertCompletionEmpty(t, "kubectl", append([]string{"__complete", "waitx"}, args...)...)
 }
