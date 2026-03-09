@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"path/filepath"
+	"strings"
 
 	"github.com/mist714/kubectl-waitx/internal/cmd"
 	_ "k8s.io/client-go/plugin/pkg/client/auth/oidc"
@@ -12,9 +14,12 @@ import (
 
 func main() {
 	args := os.Args[1:]
+	progName := filepath.Base(os.Args[0])
 
 	var err error
-	if len(args) > 0 && args[0] == "__complete" {
+	if progName == "kubectl_complete-waitx" || strings.HasPrefix(progName, "kubectl_complete-") {
+		err = cmd.RunCompletionBinary(args, os.Stdout, os.Stderr)
+	} else if len(args) > 0 && args[0] == "__complete" {
 		err = cmd.RunCompletionBinary(args[1:], os.Stdout, os.Stderr)
 	} else {
 		err = runKubectlWait(args)
