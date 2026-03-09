@@ -11,10 +11,10 @@ You can wait on a resource just fine, but the UX gets rough once you start typin
 
 `kubectl-waitx` fills that gap.
 
-It keeps the actual execution model simple:
+It keeps the execution model simple:
 
-- `kubectl-waitx` is just a thin wrapper around `kubectl wait`
-- `kubectl_complete-waitx` provides smarter completion for the plugin
+- `kubectl-waitx` is the plugin binary and forwards normal execution to `kubectl wait`
+- `kubectl_complete-waitx` is a tiny helper script that routes completion into the same binary
 
 So you still use the familiar `kubectl wait` behavior, but get a much nicer completion experience on top. 🎯
 
@@ -32,7 +32,7 @@ That means fewer docs lookups, fewer `kubectl get -o yaml` detours, and less tri
 
 ## Install
 
-Download and extract a release archive containing the thin `kubectl-waitx` wrapper and the `kubectl_complete-waitx` completion binary.
+Download and extract a release archive containing the `kubectl-waitx` plugin binary and the `kubectl_complete-waitx` helper script.
 
 In the snippet below, `OS` and `ARCH` are placeholders. Replace them with values such as `darwin` or `linux`, and `amd64` or `arm64`.
 
@@ -52,7 +52,24 @@ Run it like a normal kubectl plugin:
 kubectl waitx pod/my-pod --for=condition=Ready --timeout=60s
 ```
 
-The command execution still goes through `kubectl wait`, but completion is powered by `kubectl_complete-waitx`.
+Normal execution still goes through `kubectl wait`, and completion is routed through `kubectl_complete-waitx`.
+
+## Krew
+
+You can install from the checked-in manifest:
+
+```sh
+kubectl krew install --manifest-url="https://raw.githubusercontent.com/mist714/kubectl-waitx/main/waitx.yaml"
+```
+
+Krew only exposes `kubectl-waitx` on `PATH`, so add the bundled completion helper once after install:
+
+```sh
+version="$(ls "${HOME}/.krew/store/waitx" | sort -V | tail -1)"
+ln -sf \
+  "${HOME}/.krew/store/waitx/${version}/kubectl_complete-waitx" \
+  "${HOME}/.krew/bin/kubectl_complete-waitx"
+```
 
 ## Why This Exists
 
