@@ -2,7 +2,7 @@
 set -eu
 
 if [ "$#" -ne 2 ]; then
-  echo "usage: $0 <tag> <checksums.txt> > waitx.yaml" >&2
+  echo "usage: $0 <tag> <checksums.txt> > plugins/waitx.yaml" >&2
   exit 1
 fi
 
