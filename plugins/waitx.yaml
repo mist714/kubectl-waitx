@@ -12,7 +12,7 @@ spec:
   caveats: |
     After installing with krew, point kubectl_complete-waitx at the same binary:
 
-      ln -sf kubectl-waitx "${KREW_ROOT:-/home/runner/.krew}/bin/kubectl_complete-waitx"
+      ln -sf kubectl-waitx "${KREW_ROOT:-$HOME/.krew}/bin/kubectl_complete-waitx"
   platforms:
   - selector:
       matchLabels:
