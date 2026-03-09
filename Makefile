@@ -15,14 +15,14 @@ $(BIN_DIR):
 
 build: | $(BIN_DIR)
 	rm -f $(PLUGIN_BIN) $(PLUGIN_COMPLETE_BIN)
-	go build -o $(PLUGIN_BIN) .
-	printf '%s\n' '#!/bin/sh' 'DIR=$$(CDPATH= cd -- "$$(dirname -- "$$0")" && pwd)' 'exec "$$DIR/kubectl-waitx" __complete "$$@"' > $(PLUGIN_COMPLETE_BIN)
-	chmod +x $(PLUGIN_COMPLETE_BIN)
+	go build -o $(PLUGIN_COMPLETE_BIN) .
+	printf '%s\n' '#!/bin/sh' 'exec kubectl wait "$$@"' > $(PLUGIN_BIN)
+	chmod +x $(PLUGIN_BIN)
 
 install: build
 	mkdir -p $(PREFIX)
-	install -m 0755 $(PLUGIN_BIN) $(PREFIX)/kubectl-waitx
 	install -m 0755 $(PLUGIN_COMPLETE_BIN) $(PREFIX)/kubectl_complete-waitx
+	install -m 0755 $(PLUGIN_BIN) $(PREFIX)/kubectl-waitx
 
 test: build
 	go test ./... $(GO_TEST_FLAGS)

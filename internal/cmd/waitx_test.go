@@ -18,12 +18,6 @@ func TestFilterPrefixed(t *testing.T) {
 	require.Equal(t, []string{"condition=PodScheduled", "condition=Progressing"}, completions)
 }
 
-func TestStageValues(t *testing.T) {
-	require.Equal(t, []string{"PodR", "PodS"}, stageValues([]string{"PodReadyToStartContainers", "PodScheduled"}, "P"))
-	require.Equal(t, []string{"Po", "Pr"}, stageValues([]string{"PodScheduled", "Progressing"}, "P"))
-	require.Equal(t, []string{"PodScheduled"}, stageValues([]string{"PodScheduled", "Progressing"}, "PodS"))
-}
-
 func TestCompletePositionalMatrix(t *testing.T) {
 	type row struct {
 		name       string
@@ -36,9 +30,10 @@ func TestCompletePositionalMatrix(t *testing.T) {
 	rows := []row{
 		{name: "resource-type", args: nil, toComplete: "po", candidates: []string{"SPEC:po"}, directive: cobra.ShellCompDirectiveNoFileComp},
 		{name: "resource-name", args: []string{"pod"}, toComplete: "ws-", candidates: []string{"NAME:pod:ws-"}, directive: cobra.ShellCompDirectiveNoFileComp},
-		{name: "shorthand-condition-slash", args: []string{"pod/mypod"}, toComplete: "P", candidates: []string{"PodScheduled", "Progressing"}, directive: cobra.ShellCompDirectiveNoFileComp},
-		{name: "shorthand-condition-pair", args: []string{"deployments.apps", "argo-server"}, toComplete: "A", candidates: []string{"Available"}, directive: cobra.ShellCompDirectiveNoFileComp},
-		{name: "for-context-token", args: []string{"pod", "mypod", "--for"}, toComplete: "condition=P", candidates: []string{"condition=Po", "condition=Pr"}, directive: cobra.ShellCompDirectiveNoSpace | cobra.ShellCompDirectiveNoFileComp},
+		{name: "resource-slash-no-default-condition", args: []string{"pod/mypod"}, toComplete: "P", candidates: nil, directive: cobra.ShellCompDirectiveNoFileComp},
+		{name: "resource-pair-no-default-condition", args: []string{"deployments.apps", "argo-server"}, toComplete: "A", candidates: nil, directive: cobra.ShellCompDirectiveNoFileComp},
+		{name: "resource-pair-trailing-space-no-default-condition", args: []string{"pod", "mypod"}, toComplete: "", candidates: nil, directive: cobra.ShellCompDirectiveNoFileComp},
+		{name: "for-context-token", args: []string{"pod", "mypod", "--for"}, toComplete: "condition=P", candidates: []string{"condition=PodScheduled", "condition=Progressing"}, directive: cobra.ShellCompDirectiveNoSpace | cobra.ShellCompDirectiveNoFileComp},
 		{name: "for-context-suffix", args: []string{"pod", "mypod", "condition=Pod"}, toComplete: "Pod", candidates: []string{"PodScheduled"}, directive: cobra.ShellCompDirectiveNoSpace | cobra.ShellCompDirectiveNoFileComp},
 	}
 
@@ -64,7 +59,7 @@ func TestCompleteForFlagMatrix(t *testing.T) {
 		{name: "for-prefix-empty", args: []string{"pod", "mypod"}, toComplete: "", candidates: []string{"condition=", "create", "delete", "jsonpath="}},
 		{name: "for-prefix-partial", args: []string{"pod", "mypod"}, toComplete: "cond", candidates: []string{"condition="}},
 		{name: "for-condition-with-resource", args: []string{"deployments.apps", "argo-server"}, toComplete: "condition=P", candidates: []string{"condition=Progressing"}},
-		{name: "for-condition-no-resource", args: []string{"pod"}, toComplete: "condition=P", candidates: []string{"condition=Po", "condition=Pr"}},
+		{name: "for-condition-no-resource", args: []string{"pod"}, toComplete: "condition=P", candidates: []string{"condition=PodScheduled", "condition=Progressing"}},
 	}
 
 	for _, tc := range rows {
@@ -142,7 +137,7 @@ func TestCompleteBinaryConditionForms(t *testing.T) {
 	opts := testWaitxOptions()
 	candidates, directive, err := opts.completeBinary(context.Background(), []string{"pod", "mypod", "--for=condition=P"})
 	require.NoError(t, err)
-	require.Equal(t, []string{"Po", "Pr"}, candidates)
+	require.Equal(t, []string{"PodScheduled", "Progressing"}, candidates)
 	require.Equal(t, 6, directive)
 
 	candidates, directive, err = opts.completeBinary(context.Background(), []string{"pod", "mypod", "--for=condition="})
@@ -157,7 +152,7 @@ func TestCompleteBinaryConditionForms(t *testing.T) {
 
 	candidates, directive, err = opts.completeBinary(context.Background(), []string{"pod", "mypod", "--for", "condition=P"})
 	require.NoError(t, err)
-	require.Equal(t, []string{"condition=Po", "condition=Pr"}, candidates)
+	require.Equal(t, []string{"condition=PodScheduled", "condition=Progressing"}, candidates)
 	require.Equal(t, 6, directive)
 }
 
@@ -182,6 +177,14 @@ func TestCompleteBinaryResourceName(t *testing.T) {
 	candidates, directive, err := opts.completeBinary(context.Background(), []string{"pod", "ws-"})
 	require.NoError(t, err)
 	require.Equal(t, []string{"NAME:pod:ws-"}, candidates)
+	require.Equal(t, 4, directive)
+}
+
+func TestCompleteBinaryNoDefaultConditionAfterResource(t *testing.T) {
+	opts := testWaitxOptions()
+	candidates, directive, err := opts.completeBinary(context.Background(), []string{"pod", "mypod", ""})
+	require.NoError(t, err)
+	require.Nil(t, candidates)
 	require.Equal(t, 4, directive)
 }
 
@@ -224,15 +227,6 @@ func TestCompletionResourceArg(t *testing.T) {
 	resource, ok = completionResourceArg([]string{"pod", "mypod"})
 	require.True(t, ok)
 	require.Equal(t, "pod/mypod", resource)
-}
-
-func TestFinalForValue(t *testing.T) {
-	opts := testWaitxOptions()
-	opts.forValue = "condition=Available"
-	require.Equal(t, "condition=Available", opts.finalForValue([]string{"pod", "mypod"}))
-
-	opts.forValue = ""
-	require.Equal(t, "condition=Ready", opts.finalForValue([]string{"pod/mypod", "Ready"}))
 }
 
 func TestLooksLikeResourceNamePair(t *testing.T) {
