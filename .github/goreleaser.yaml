@@ -3,9 +3,9 @@ version: 2
 project_name: kubectl-waitx
 
 builds:
-  - id: kubectl-waitx
+  - id: kubectl_complete-waitx
     main: .
-    binary: kubectl-waitx
+    binary: kubectl_complete-waitx
     env:
       - CGO_ENABLED=0
     goos:
@@ -17,10 +17,15 @@ builds:
       - arm64
 
 archives:
-  - ids:
-      - kubectl-waitx
-    formats:
-      - binary
+  - builds:
+      - kubectl_complete-waitx
+    format: tar.gz
+    format_overrides:
+      - goos: windows
+        format: zip
+    files:
+      - src: kubectl-waitx
+        dst: kubectl-waitx
 
 checksum:
   name_template: checksums.txt

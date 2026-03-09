@@ -16,8 +16,7 @@ $(BIN_DIR):
 build: | $(BIN_DIR)
 	rm -f $(PLUGIN_BIN) $(PLUGIN_COMPLETE_BIN)
 	go build -o $(PLUGIN_COMPLETE_BIN) .
-	printf '%s\n' '#!/bin/sh' 'exec kubectl wait "$$@"' > $(PLUGIN_BIN)
-	chmod +x $(PLUGIN_BIN)
+	install -m 0755 kubectl-waitx $(PLUGIN_BIN)
 
 install: build
 	mkdir -p $(PREFIX)
