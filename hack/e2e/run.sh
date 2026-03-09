@@ -59,13 +59,22 @@ apiVersion: testing.waitx.dev/v1
 kind: Widget
 metadata:
   name: demo-widget
-status:
-  conditions:
-    - type: GadgetReady
-      status: "True"
-    - type: PartsInstalled
-      status: "True"
 EOF
+
+kubectl patch -n "$namespace" widget/demo-widget --subresource=status --type=merge --patch '{
+  "status": {
+    "conditions": [
+      {
+        "type": "GadgetReady",
+        "status": "True"
+      },
+      {
+        "type": "PartsInstalled",
+        "status": "True"
+      }
+    ]
+  }
+}'
 
 kubectl wait -n "$namespace" --for=condition=Ready pod/demo-a --timeout=120s >/dev/null
 kubectl wait -n "$namespace" --for=condition=Ready pod/demo-b --timeout=120s >/dev/null
