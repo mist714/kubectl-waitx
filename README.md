@@ -2,14 +2,14 @@
 
 ![kubectl-waitx demo](hack/asciinema/readme-demo.svg)
 
-✨ `kubectl wait` is built into kubectl, but its shell completion is still pretty bare.
+`kubectl wait` is built into kubectl, but its shell completion is still pretty bare.
 
 You can wait on a resource just fine, but the UX gets rough once you start typing real commands:
 
-- 🔎 resource kinds and names are not surfaced as smoothly as you want
-- 🤔 `--for` values are easy to forget
-- 🫥 `condition=...` values are often not obvious until you inspect the resource first
-- 🧩 CRD status conditions are especially annoying because you usually have to know them in advance
+- resource kinds and names are not surfaced very well
+- `--for` values are easy to forget
+- `condition=...` values are often not obvious until you inspect the resource first
+- CRD status conditions are especially awkward because you usually have to know them in advance
 
 `kubectl-waitx` fills that gap.
 
@@ -19,17 +19,17 @@ It keeps the execution model simple:
 - normal execution is forwarded to `kubectl wait`
 - completion is handled by the same binary when invoked as `kubectl_complete-waitx`
 
-So you still use the familiar `kubectl wait` behavior, but get a much nicer completion experience on top. 🎯
+So you still use the familiar `kubectl wait` behavior, but with a much better completion experience on top.
 
 ## What It Improves
 
 With `kubectl waitx`, completion can help you discover:
 
-- 📦 resource kinds such as `pods`, `deployments.apps`, or custom resources
-- 🏷️ resource names for the selected kind
-- 🛠️ `--for` suggestions such as `condition=`, `create`, `delete`, and `jsonpath=`
-- ✅ condition names from built-in Kubernetes resources
-- 🧪 condition names from CRDs, so custom controllers feel much less opaque
+- resource kinds such as `pods`, `deployments.apps`, or custom resources
+- resource names for the selected kind
+- `--for` suggestions such as `condition=`, `create`, `delete`, and `jsonpath=`
+- condition names from built-in Kubernetes resources
+- condition names from CRDs, so custom controllers feel much less opaque
 
 That means fewer docs lookups, fewer `kubectl get -o yaml` detours, and less trial-and-error at the prompt.
 
@@ -72,8 +72,8 @@ Normal execution still goes through `kubectl wait`. For plugin completion, point
 
 ## Why This Exists
 
-`kubectl wait` is already useful. 🚀
+`kubectl wait` is already useful.
 
 What is missing is discoverability. When the hard part is remembering which condition names exist, especially for CRDs, completion becomes more than a convenience. It becomes the interface.
 
-That is the whole point of `kubectl-waitx`: make `kubectl wait` feel easier to explore before you already know the answer. ✨
+That is the whole point of `kubectl-waitx`: make `kubectl wait` easier to explore before you already know the answer.
