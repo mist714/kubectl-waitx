@@ -13,7 +13,7 @@ printf '\n'
 printf '$ '
 sleep 0.4
 
-printf '%s' 'kubectl wait pod demo-a --for ' | fold -w1 | while IFS= read -r ch || [ -n "$ch" ]; do
+printf '%s' 'kubectl wait pod ' | fold -w1 | while IFS= read -r ch || [ -n "$ch" ]; do
   printf '%s' "$ch"
   sleep 0.06
 done
@@ -21,7 +21,17 @@ sleep 0.3
 printf '\n'
 printf 'CHANGELOG.md  go.sum        internal/     Makefile      README.md     \n'
 printf 'go.mod        hack/         main.go       plugins/      \n'
-sleep 0.8
+sleep 1.5
+printf '\033[3A\r\033[J'
+printf "$ kubectl wait pod "
+printf '%s' 'demo-a --for ' | fold -w1 | while IFS= read -r ch || [ -n "$ch" ]; do
+  printf '%s' "$ch"
+  sleep 0.06
+done
+printf '\n'
+printf 'CHANGELOG.md  go.sum        internal/     Makefile      README.md     \n'
+printf 'go.mod        hack/         main.go       plugins/      \n'
+sleep 1.5
 printf '^C\n'
 printf '\033[3A'
 printf '\033[2K'
@@ -30,12 +40,14 @@ printf '\033[1B\r\033[2K'
 printf '\033[2A\r'
 printf '\033[1B\r'
 printf '$ '
-sleep 0.5
+sleep 1.5
 
 printf '%s' 'kubectl waitx pod d' | fold -w1 | while IFS= read -r ch || [ -n "$ch" ]; do
   printf '%s' "$ch"
   sleep 0.06
 done
+sleep 0.3
+printf 'emo-'
 sleep 0.3
 printf '\n'
 printf 'demo-a  demo-b\n'

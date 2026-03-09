@@ -9,7 +9,7 @@ ASCIINEMA_SCRIPT := hack/asciinema/readme-demo.sh
 ASCIINEMA_CAST := hack/asciinema/readme-demo.cast
 ASCIINEMA_SVG := hack/asciinema/readme-demo.svg
 
-.PHONY: deps build install test e2e asciinema-demo fmt lint clean
+.PHONY: deps build install test e2e asciinema-demo fmt lint clean svg
 
 deps:
 	go mod download
@@ -43,7 +43,7 @@ $(ASCIINEMA_CAST): $(ASCIINEMA_SCRIPT)
 $(ASCIINEMA_SVG): $(ASCIINEMA_CAST)
 	$(SVG_TERM) --in $(ASCIINEMA_CAST) --out $(ASCIINEMA_SVG) --width 100 --height 24 --window --no-cursor
 
-gif: $(ASCIINEMA_SVG)
+svg: $(ASCIINEMA_SVG)
 
 fmt:
 	go fix ./...
