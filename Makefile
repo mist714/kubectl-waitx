@@ -2,9 +2,14 @@ BIN_DIR := bin
 PLUGIN_BIN := $(BIN_DIR)/kubectl-waitx
 PLUGIN_COMPLETE_BIN := $(BIN_DIR)/kubectl_complete-waitx
 PREFIX ?= $(HOME)/.local/bin
+ASCIINEMA ?= asciinema
+SVG_TERM ?= svg-term
 GO_SOURCES := main.go $(wildcard internal/cmd/*.go)
+ASCIINEMA_SCRIPT := hack/asciinema/readme-demo.sh
+ASCIINEMA_CAST := hack/asciinema/readme-demo.cast
+ASCIINEMA_SVG := hack/asciinema/readme-demo.svg
 
-.PHONY: deps build install test e2e fmt lint clean
+.PHONY: deps build install test e2e asciinema-demo fmt lint clean
 
 deps:
 	go mod download
@@ -32,6 +37,14 @@ test:
 e2e: build
 	./hack/e2e/run.sh
 
+$(ASCIINEMA_CAST): $(ASCIINEMA_SCRIPT)
+	$(ASCIINEMA) record --overwrite --output-format asciicast-v2 --headless --command ./$(ASCIINEMA_SCRIPT) $(ASCIINEMA_CAST)
+
+$(ASCIINEMA_SVG): $(ASCIINEMA_CAST)
+	$(SVG_TERM) --in $(ASCIINEMA_CAST) --out $(ASCIINEMA_SVG) --width 100 --height 24 --window --no-cursor
+
+gif: $(ASCIINEMA_SVG)
+
 fmt:
 	go fix ./...
 	golangci-lint run --fix ./... || true
@@ -41,4 +54,4 @@ lint:
 	golangci-lint run ./...
 
 clean:
-	rm -rf $(BIN_DIR)
+	rm -rf $(BIN_DIR) hack/asciinema/readme-demo.cast

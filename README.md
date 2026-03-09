@@ -1,5 +1,7 @@
 # kubectl-waitx
 
+![kubectl-waitx demo](hack/asciinema/readme-demo.svg)
+
 ✨ `kubectl wait` is built into kubectl, but its shell completion is still pretty bare.
 
 You can wait on a resource just fine, but the UX gets rough once you start typing real commands:
