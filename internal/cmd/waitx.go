@@ -81,7 +81,12 @@ func (o *waitxOptions) completeBinary(ctx context.Context, args []string) ([]str
 	req := parseCompletionRequest(args)
 
 	if req.mode == completionModeForValue {
-		return o.completeForRequest(ctx, req), shellCompDirectiveNoFileCompNoSpace, nil
+		candidates, directive, handled := o.completeForRequest(ctx, req)
+		if !handled {
+			candidates, resourceDirective := o.resourceCompleter(completedResourceArgs(req.resourceArgs), req.toComplete)
+			return candidates, int(resourceDirective), nil
+		}
+		return candidates, directive, nil
 	}
 	if req.mode == completionModeForFlag {
 		return []string{"--for="}, shellCompDirectiveNoFileCompNoSpace, nil
@@ -94,18 +99,18 @@ func (o *waitxOptions) completeBinary(ctx context.Context, args []string) ([]str
 	return candidates, int(directive), nil
 }
 
-func (o *waitxOptions) completeForRequest(ctx context.Context, req completionRequest) []string {
+func (o *waitxOptions) completeForRequest(ctx context.Context, req completionRequest) ([]string, int, bool) {
 	if req.conditionContext {
 		return o.completeConditionValue(ctx, req)
 	}
 
-	return filterValues(append([]string{conditionValuePrefix}, defaultForPrefixes...), req.forValue)
+	return completeDiscreteValues(defaultForPrefixesWithCondition(), req.forValue, req)
 }
 
-func (o *waitxOptions) completeConditionValue(ctx context.Context, req completionRequest) []string {
-	resourceArg, ok := completionResourceArg(req.resourceArgs)
+func (o *waitxOptions) completeConditionValue(ctx context.Context, req completionRequest) ([]string, int, bool) {
+	resourceArg, ok := completionResourceArg(lookupResourceArgs(req))
 	if !ok {
-		return nil
+		return nil, shellCompDirectiveNoFileCompNoSpace, true
 	}
 
 	timeoutCtx, cancel := context.WithTimeout(ctx, time.Second)
@@ -113,9 +118,38 @@ func (o *waitxOptions) completeConditionValue(ctx context.Context, req completio
 
 	conditions, _ := o.lookupConditions(timeoutCtx, resourceArg)
 	if req.valuePrefix == "" {
-		return filterValues(conditions, req.forValue)
+		return completeDiscreteValues(conditions, req.forValue, req)
 	}
-	return filterPrefixed(conditions, req.valuePrefix+req.forValue, req.valuePrefix)
+	if isExactForValueMatch(conditions, req.forValue) {
+		return exactForValueResult(req)
+	}
+	candidates := filterPrefixed(conditions, req.valuePrefix+req.forValue, req.valuePrefix)
+	return candidates, shellCompDirectiveNoFileCompNoSpace, true
+}
+
+func completeDiscreteValues(values []string, partial string, req completionRequest) ([]string, int, bool) {
+	if isExactForValueMatch(values, partial) {
+		return exactForValueResult(req)
+	}
+	return filterValues(values, partial), shellCompDirectiveNoFileCompNoSpace, true
+}
+
+func exactForValueResult(req completionRequest) ([]string, int, bool) {
+	if hasFollowingResourceArg(req) {
+		return nil, shellCompDirectiveNoFileComp, false
+	}
+	return nil, shellCompDirectiveNoFileComp, true
+}
+
+func lookupResourceArgs(req completionRequest) []string {
+	if hasFollowingResourceArg(req) {
+		return completedResourceArgs(req.resourceArgs)
+	}
+	return req.resourceArgs
+}
+
+func defaultForPrefixesWithCondition() []string {
+	return append([]string{conditionValuePrefix}, defaultForPrefixes...)
 }
 
 func filterPrefixed(values []string, partial, prefix string) []string {
@@ -137,6 +171,23 @@ func filterValues(values []string, partial string) []string {
 		}
 	}
 	return candidates
+}
+
+func isExactForValueMatch(values []string, target string) bool {
+	for _, value := range values {
+		if value == target {
+			return true
+		}
+	}
+	return false
+}
+
+func hasFollowingResourceArg(req completionRequest) bool {
+	if len(req.resourceArgs) < 2 {
+		return false
+	}
+	lastResourceArg := req.resourceArgs[len(req.resourceArgs)-1]
+	return req.toComplete == lastResourceArg && req.toComplete != req.valuePrefix+req.forValue && req.toComplete != req.forValue
 }
 
 func completedResourceArgs(args []string) []string {

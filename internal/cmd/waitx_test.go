@@ -36,6 +36,13 @@ func TestParseCompletionRequest(t *testing.T) {
 	require.Equal(t, []string{"pod", "mypod"}, req.resourceArgs)
 	require.Equal(t, completionModeForFlag, req.mode)
 
+	req = parseCompletionRequest([]string{"pod", "--for=condition=Ready", "my"})
+	require.Equal(t, []string{"pod", "my"}, req.resourceArgs)
+	require.Equal(t, completionModeForValue, req.mode)
+	require.True(t, req.conditionContext)
+	require.Equal(t, "Ready", req.forValue)
+	require.Equal(t, "my", req.toComplete)
+
 	req = parseCompletionRequest([]string{"pod", "mypod", "--f"})
 	require.Equal(t, []string{"pod", "mypod"}, req.resourceArgs)
 	require.Equal(t, completionModeFlagPartial, req.mode)
@@ -63,6 +70,16 @@ func TestCompleteBinaryConditionForms(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, []string{"condition=PodScheduled", "condition=Progressing"}, candidates)
 	require.Equal(t, shellCompDirectiveNoFileCompNoSpace, directive)
+
+	candidates, directive, err = opts.completeBinary(context.Background(), []string{"pod", "--for=condition=P"})
+	require.NoError(t, err)
+	require.Equal(t, []string{"PodScheduled", "Progressing"}, candidates)
+	require.Equal(t, shellCompDirectiveNoFileCompNoSpace, directive)
+
+	candidates, directive, err = opts.completeBinary(context.Background(), []string{"pod", "mypod", "--for=condition=PodScheduled"})
+	require.NoError(t, err)
+	require.Empty(t, candidates)
+	require.Equal(t, shellCompDirectiveNoFileComp, directive)
 }
 
 func TestCompleteBinaryForFlagName(t *testing.T) {
@@ -71,6 +88,38 @@ func TestCompleteBinaryForFlagName(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, []string{"--for="}, candidates)
 	require.Equal(t, shellCompDirectiveNoFileCompNoSpace, directive)
+}
+
+func TestCompleteBinaryForValueExactKeyword(t *testing.T) {
+	opts := testWaitxOptions()
+	candidates, directive, err := opts.completeBinary(context.Background(), []string{"pod", "mypod", "--for=create"})
+	require.NoError(t, err)
+	require.Empty(t, candidates)
+	require.Equal(t, shellCompDirectiveNoFileComp, directive)
+}
+
+func TestCompleteBinaryResourceAfterExactCondition(t *testing.T) {
+	opts := testWaitxOptions()
+	candidates, directive, err := opts.completeBinary(context.Background(), []string{"pod", "--for=condition=PodScheduled", "my"})
+	require.NoError(t, err)
+	require.Equal(t, []string{"RES:pod:my"}, candidates)
+	require.Equal(t, shellCompDirectiveNoFileComp, directive)
+}
+
+func TestCompleteBinaryResourceAfterExactConditionWithTrailingSpace(t *testing.T) {
+	opts := testWaitxOptions()
+	candidates, directive, err := opts.completeBinary(context.Background(), []string{"pod", "--for=condition=PodScheduled", ""})
+	require.NoError(t, err)
+	require.Equal(t, []string{"RES:pod:"}, candidates)
+	require.Equal(t, shellCompDirectiveNoFileComp, directive)
+}
+
+func TestCompleteBinaryResourceAfterExactKeyword(t *testing.T) {
+	opts := testWaitxOptions()
+	candidates, directive, err := opts.completeBinary(context.Background(), []string{"pod", "--for=create", "my"})
+	require.NoError(t, err)
+	require.Equal(t, []string{"RES:pod:my"}, candidates)
+	require.Equal(t, shellCompDirectiveNoFileComp, directive)
 }
 
 func TestCompleteBinaryFlagPartial(t *testing.T) {
@@ -134,8 +183,8 @@ func TestCompletionResourceArg(t *testing.T) {
 	require.Empty(t, resource)
 
 	resource, ok = completionResourceArg([]string{"pod"})
-	require.False(t, ok)
-	require.Empty(t, resource)
+	require.True(t, ok)
+	require.Equal(t, "pod", resource)
 
 	resource, ok = completionResourceArg([]string{"pod/mypod"})
 	require.True(t, ok)
@@ -162,6 +211,8 @@ func testWaitxOptions() *waitxOptions {
 	}
 	opts.conditionLookupFunc = func(_ context.Context, resourceArg string) ([]string, error) {
 		switch resourceArg {
+		case "pod":
+			return []string{"PodScheduled", "Progressing"}, nil
 		case "pod/mypod":
 			return []string{"PodScheduled", "Progressing"}, nil
 		case "deployments.apps/argo-server":

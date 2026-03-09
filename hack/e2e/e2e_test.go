@@ -35,6 +35,9 @@ func TestE2E(t *testing.T) {
 		assertKubectlCompletionContains(t, podAlpha, "pod", "demo-a")
 		assertKubectlCompletionContains(t, podBeta, "pod", podAlpha, "demo-b")
 		assertKubectlCompletionContains(t, "pod/"+podBeta, "pod/"+podAlpha, "pod/demo-b")
+		assertKubectlCompletionContains(t, podAlpha, "pod", "--for=condition=Ready", "demo-a")
+		assertKubectlCompletionContains(t, podAlpha, "pod", "--for=condition=Ready", "")
+		assertKubectlCompletionContains(t, podAlpha, "pod", "--for=create", "demo-a")
 	})
 
 	t.Run("for flag", func(t *testing.T) {
@@ -46,14 +49,18 @@ func TestE2E(t *testing.T) {
 	})
 
 	t.Run("builtin conditions", func(t *testing.T) {
+		assertKubectlCompletionContains(t, "PodScheduled", "pod", "--for=condition=P")
 		assertKubectlCompletionContains(t, "PodScheduled", "pod", podAlpha, "--for=condition=P")
 		assertKubectlCompletionContains(t, "PodReadyToStartContainers", "pod", podAlpha, "--for=condition=PodR")
+		assertKubectlCompletionContains(t, "Available", "deployment", "--for=condition=A")
 		assertKubectlCompletionContains(t, "Available", "deployment", deployment, "--for=condition=A")
 	})
 
 	t.Run("custom resource conditions", func(t *testing.T) {
 		assertKubectlCompletionContains(t, widget, "widget", "demo-")
+		assertKubectlCompletionContains(t, "GadgetReady", "widget", "--for=condition=G")
 		assertKubectlCompletionContains(t, "GadgetReady", "widget", widget, "--for=condition=G")
+		assertKubectlCompletionContains(t, "PartsInstalled", "widget", "--for=condition=P")
 		assertKubectlCompletionContains(t, "PartsInstalled", "widget", widget, "--for=condition=P")
 	})
 

@@ -12,17 +12,14 @@ func parseCompletionRequest(args []string) completionRequest {
 		arg := args[i]
 		switch {
 		case strings.HasPrefix(arg, "--for="):
-			req.mode = completionModeForValue
-			req.conditionContext, req.forValue, req.valuePrefix = parseForValue(strings.TrimPrefix(arg, "--for="), false)
-			return req
+			req.applyForValue(strings.TrimPrefix(arg, "--for="), false, arg)
 		case arg == "--for":
 			if i+1 >= len(args) {
 				req.mode = completionModeForFlag
 				return req
 			}
-			req.mode = completionModeForValue
-			req.conditionContext, req.forValue, req.valuePrefix = parseForValue(args[i+1], true)
-			return req
+			req.applyForValue(args[i+1], true, args[i+1])
+			i++
 		case forArgMode(arg) == completionModeFlagPartial:
 			req.mode = completionModeFlagPartial
 			req.toComplete = arg
@@ -32,6 +29,12 @@ func parseCompletionRequest(args []string) completionRequest {
 		}
 	}
 	return req
+}
+
+func (req *completionRequest) applyForValue(value string, separate bool, toComplete string) {
+	req.conditionContext, req.forValue, req.valuePrefix = parseForValue(value, separate)
+	req.mode = completionModeForValue
+	req.toComplete = toComplete
 }
 
 func forArgMode(arg string) completionMode {
