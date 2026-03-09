@@ -4,22 +4,10 @@ import (
 	"context"
 	"errors"
 	"slices"
-	"time"
 
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/cli-runtime/pkg/resource"
 )
-
-func (o *waitxOptions) completionConditions(ctx context.Context, resourceArg string) []string {
-	timeoutCtx, cancel := context.WithTimeout(ctx, time.Second)
-	defer cancel()
-
-	conditions, err := o.lookupConditions(timeoutCtx, resourceArg)
-	if err != nil || len(conditions) == 0 {
-		return nil
-	}
-	return conditions
-}
 
 func (o *waitxOptions) lookupConditions(ctx context.Context, resourceArg string) ([]string, error) {
 	if o.conditionLookupFunc != nil {

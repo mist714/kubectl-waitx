@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"strings"
+	"time"
 
 	"github.com/spf13/cobra"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
@@ -91,7 +92,10 @@ func (o *waitxOptions) completeForRequest(ctx context.Context, req completionReq
 	if req.conditionContext {
 		conditions := []string(nil)
 		if resourceArg, ok := completionResourceArg(req.resourceArgs); ok {
-			conditions = o.completionConditions(ctx, resourceArg)
+			timeoutCtx, cancel := context.WithTimeout(ctx, time.Second)
+			defer cancel()
+
+			conditions, _ = o.lookupConditions(timeoutCtx, resourceArg)
 		}
 		if req.valuePrefix == "" {
 			return filterValues(conditions, req.forValue)

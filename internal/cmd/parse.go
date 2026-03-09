@@ -11,18 +11,9 @@ func parseCompletionRequest(args []string) completionRequest {
 	for i := 0; i < len(args); i++ {
 		arg := args[i]
 		switch {
-		case strings.HasPrefix(arg, "--for=condition="):
-			req.mode = completionModeForValue
-			req.conditionContext = true
-			req.forValue = strings.TrimPrefix(arg, "--for=condition=")
-			return req
 		case strings.HasPrefix(arg, "--for="):
 			req.mode = completionModeForValue
-			req.forValue = strings.TrimPrefix(arg, "--for=")
-			req.conditionContext = strings.HasPrefix(req.forValue, "condition=")
-			if req.conditionContext {
-				req.forValue = strings.TrimPrefix(req.forValue, "condition=")
-			}
+			req.conditionContext, req.forValue, req.valuePrefix = parseForValue(strings.TrimPrefix(arg, "--for="), false)
 			return req
 		case arg == "--for":
 			if i+1 >= len(args) {
@@ -30,16 +21,9 @@ func parseCompletionRequest(args []string) completionRequest {
 				return req
 			}
 			req.mode = completionModeForValue
-			value := args[i+1]
-			if strings.HasPrefix(value, "condition=") {
-				req.conditionContext = true
-				req.valuePrefix = "condition="
-				req.forValue = strings.TrimPrefix(value, "condition=")
-			} else {
-				req.forValue = value
-			}
+			req.conditionContext, req.forValue, req.valuePrefix = parseForValue(args[i+1], true)
 			return req
-		case strings.HasPrefix(arg, "-"):
+		case forArgMode(arg) == completionModeFlagPartial:
 			req.mode = completionModeFlagPartial
 			req.toComplete = arg
 		default:
@@ -48,6 +32,23 @@ func parseCompletionRequest(args []string) completionRequest {
 		}
 	}
 	return req
+}
+
+func forArgMode(arg string) completionMode {
+	if strings.HasPrefix(arg, "-") {
+		return completionModeFlagPartial
+	}
+	return completionModeResource
+}
+
+func parseForValue(value string, separate bool) (conditionContext bool, forValue, valuePrefix string) {
+	if strings.HasPrefix(value, "condition=") {
+		if separate {
+			return true, strings.TrimPrefix(value, "condition="), "condition="
+		}
+		return true, strings.TrimPrefix(value, "condition="), ""
+	}
+	return false, value, ""
 }
 
 func completionResourceArg(args []string) (string, bool) {
