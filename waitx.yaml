@@ -1,0 +1,62 @@
+apiVersion: krew.googlecontainertools.github.com/v1alpha2
+kind: Plugin
+metadata:
+  name: waitx
+spec:
+  version: "v0.0.3"
+  homepage: https://github.com/mist714/kubectl-waitx
+  shortDescription: Better completion for kubectl wait
+  description: |
+    kubectl-waitx improves shell completion for kubectl wait,
+    especially around --for values and condition names.
+  caveats: |
+    This manifest is updated after each release by the release workflow.
+  platforms:
+    - selector:
+        matchLabels:
+          os: darwin
+          arch: amd64
+      uri: https://github.com/mist714/kubectl-waitx/releases/download/v0.0.3/kubectl-waitx_0.0.3_darwin_amd64.tar.gz
+      sha256: TO_BE_FILLED_BY_RELEASE_WORKFLOW
+      files:
+        - from: kubectl-waitx
+          to: .
+        - from: kubectl_complete-waitx
+          to: .
+      bin: kubectl-waitx
+    - selector:
+        matchLabels:
+          os: darwin
+          arch: arm64
+      uri: https://github.com/mist714/kubectl-waitx/releases/download/v0.0.3/kubectl-waitx_0.0.3_darwin_arm64.tar.gz
+      sha256: TO_BE_FILLED_BY_RELEASE_WORKFLOW
+      files:
+        - from: kubectl-waitx
+          to: .
+        - from: kubectl_complete-waitx
+          to: .
+      bin: kubectl-waitx
+    - selector:
+        matchLabels:
+          os: linux
+          arch: amd64
+      uri: https://github.com/mist714/kubectl-waitx/releases/download/v0.0.3/kubectl-waitx_0.0.3_linux_amd64.tar.gz
+      sha256: TO_BE_FILLED_BY_RELEASE_WORKFLOW
+      files:
+        - from: kubectl-waitx
+          to: .
+        - from: kubectl_complete-waitx
+          to: .
+      bin: kubectl-waitx
+    - selector:
+        matchLabels:
+          os: linux
+          arch: arm64
+      uri: https://github.com/mist714/kubectl-waitx/releases/download/v0.0.3/kubectl-waitx_0.0.3_linux_arm64.tar.gz
+      sha256: TO_BE_FILLED_BY_RELEASE_WORKFLOW
+      files:
+        - from: kubectl-waitx
+          to: .
+        - from: kubectl_complete-waitx
+          to: .
+      bin: kubectl-waitx

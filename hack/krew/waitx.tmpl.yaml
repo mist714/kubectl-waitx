@@ -1,0 +1,15 @@
+apiVersion: krew.googlecontainertools.github.com/v1alpha2
+kind: Plugin
+metadata:
+  name: waitx
+spec:
+  version: "${TAG}"
+  homepage: https://github.com/${REPO}
+  shortDescription: Better completion for kubectl wait
+  description: |
+    kubectl-waitx improves shell completion for kubectl wait,
+    especially around --for values and condition names.
+  caveats: |
+    This plugin installs both kubectl-waitx and kubectl_complete-waitx.
+  platforms:
+${PLATFORMS}

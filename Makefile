@@ -27,7 +27,7 @@ test: build
 	go test ./... $(GO_TEST_FLAGS)
 
 e2e: build
-	./hack/e2e.sh
+	./hack/e2e/run.sh
 
 fmt:
 	go fix ./...
