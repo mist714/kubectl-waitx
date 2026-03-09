@@ -33,6 +33,16 @@ That means fewer docs lookups, fewer `kubectl get -o yaml` detours, and less tri
 
 ## Install
 
+### Krew (Recommended)
+
+You can install from this repo as a custom Krew index:
+
+```sh
+kubectl krew index add mist714 https://github.com/mist714/kubectl-waitx.git
+kubectl krew install mist714/waitx
+ln -sf kubectl-waitx "${KREW_ROOT:-$HOME/.krew}/bin/kubectl_complete-waitx"
+```
+
 ### Release Archive
 
 Download and extract a release archive containing the `kubectl-waitx` plugin binary.
@@ -46,15 +56,6 @@ curl -sSL \
   | tar -C "$INSTALL_DIR" -xz kubectl-waitx
 chmod +x "$INSTALL_DIR/kubectl-waitx"
 ln -sf kubectl-waitx "$INSTALL_DIR/kubectl_complete-waitx"
-```
-
-### Krew
-
-You can install from the checked-in manifest:
-
-```sh
-kubectl krew install --manifest-url="https://raw.githubusercontent.com/mist714/kubectl-waitx/main/waitx.yaml"
-ln -sf kubectl-waitx "${KREW_ROOT:-$HOME/.krew}/bin/kubectl_complete-waitx"
 ```
 
 ## Usage
