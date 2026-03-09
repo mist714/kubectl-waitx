@@ -15,13 +15,13 @@ $(BIN_DIR):
 
 build: | $(BIN_DIR)
 	rm -f $(PLUGIN_BIN) $(PLUGIN_COMPLETE_BIN)
-	go build -o $(PLUGIN_COMPLETE_BIN) .
-	install -m 0755 kubectl-waitx $(PLUGIN_BIN)
+	go build -o $(PLUGIN_BIN) .
+	ln -sf kubectl-waitx $(PLUGIN_COMPLETE_BIN)
 
 install: build
 	mkdir -p $(PREFIX)
-	install -m 0755 $(PLUGIN_COMPLETE_BIN) $(PREFIX)/kubectl_complete-waitx
 	install -m 0755 $(PLUGIN_BIN) $(PREFIX)/kubectl-waitx
+	ln -sf kubectl-waitx $(PREFIX)/kubectl_complete-waitx
 
 test: build
 	go test ./... $(GO_TEST_FLAGS)

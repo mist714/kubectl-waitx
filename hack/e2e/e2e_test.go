@@ -19,7 +19,6 @@ func TestE2E(t *testing.T) {
 		t.Skip("e2e environment is not configured")
 	}
 
-	_ = binPath(t, "kubectl_complete-waitx")
 	namespace := env(t, "NAMESPACE")
 	podAlpha := env(t, "POD_ALPHA")
 	podBeta := env(t, "POD_BETA")

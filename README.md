@@ -11,10 +11,11 @@ You can wait on a resource just fine, but the UX gets rough once you start typin
 
 `kubectl-waitx` fills that gap.
 
-It keeps the actual execution model simple:
+It keeps the execution model simple:
 
-- `kubectl-waitx` is just a thin wrapper around `kubectl wait`
-- `kubectl_complete-waitx` provides smarter completion for the plugin
+- `kubectl-waitx` is the plugin binary
+- normal execution is forwarded to `kubectl wait`
+- completion is handled by the same binary when invoked as `kubectl_complete-waitx`
 
 So you still use the familiar `kubectl wait` behavior, but get a much nicer completion experience on top. 🎯
 
@@ -32,7 +33,9 @@ That means fewer docs lookups, fewer `kubectl get -o yaml` detours, and less tri
 
 ## Install
 
-Download and extract a release archive containing the thin `kubectl-waitx` wrapper and the `kubectl_complete-waitx` completion binary.
+### Release Archive
+
+Download and extract a release archive containing the `kubectl-waitx` plugin binary.
 
 In the snippet below, `OS` and `ARCH` are placeholders. Replace them with values such as `darwin` or `linux`, and `amd64` or `arm64`.
 
@@ -40,8 +43,18 @@ In the snippet below, `OS` and `ARCH` are placeholders. Replace them with values
 INSTALL_DIR=/usr/local/bin
 curl -sSL \
   "https://github.com/mist714/kubectl-waitx/releases/download/v0.0.1/kubectl-waitx_0.0.1_OS_ARCH.tar.gz" \
-  | tar -C "$INSTALL_DIR" -xz kubectl-waitx kubectl_complete-waitx
-chmod +x "$INSTALL_DIR/kubectl-waitx" "$INSTALL_DIR/kubectl_complete-waitx"
+  | tar -C "$INSTALL_DIR" -xz kubectl-waitx
+chmod +x "$INSTALL_DIR/kubectl-waitx"
+ln -sf kubectl-waitx "$INSTALL_DIR/kubectl_complete-waitx"
+```
+
+### Krew
+
+You can install from the checked-in manifest:
+
+```sh
+kubectl krew install --manifest-url="https://raw.githubusercontent.com/mist714/kubectl-waitx/main/waitx.yaml"
+ln -sf kubectl-waitx "${KREW_ROOT:-$HOME/.krew}/bin/kubectl_complete-waitx"
 ```
 
 ## Usage
@@ -52,7 +65,7 @@ Run it like a normal kubectl plugin:
 kubectl waitx pod/my-pod --for=condition=Ready --timeout=60s
 ```
 
-The command execution still goes through `kubectl wait`, but completion is powered by `kubectl_complete-waitx`.
+Normal execution still goes through `kubectl wait`. For plugin completion, point `kubectl_complete-waitx` at the same binary.
 
 ## Why This Exists
 

@@ -7,6 +7,4 @@
     files:
       - from: kubectl-waitx
         to: .
-      - from: kubectl_complete-waitx
-        to: .
     bin: kubectl-waitx

@@ -10,6 +10,8 @@ spec:
     kubectl-waitx improves shell completion for kubectl wait,
     especially around --for values and condition names.
   caveats: |
-    This plugin installs both kubectl-waitx and kubectl_complete-waitx.
+    After installing with krew, point kubectl_complete-waitx at the same binary:
+
+      ln -sf kubectl-waitx "${KREW_ROOT:-$HOME/.krew}/bin/kubectl_complete-waitx"
   platforms:
 ${PLATFORMS}
