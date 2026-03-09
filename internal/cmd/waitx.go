@@ -29,14 +29,21 @@ type waitxOptions struct {
 	resourceCompleter   func([]string, string) ([]string, cobra.ShellCompDirective)
 }
 
+type completionMode int
+
+const (
+	completionModeResource completionMode = iota
+	completionModeForFlag
+	completionModeForValue
+	completionModeFlagPartial
+)
+
 type completionRequest struct {
+	mode             completionMode
 	resourceArgs     []string
 	toComplete       string
 	forValue         string
-	flagPartial      string
-	forFlagName      bool
-	forEquals        bool
-	forSeparate      bool
+	valuePrefix      string
 	conditionContext bool
 }
 
@@ -66,14 +73,14 @@ func RunCompletionBinary(args []string, stdout io.Writer, _ io.Writer) error {
 func (o *waitxOptions) completeBinary(ctx context.Context, args []string) ([]string, int, error) {
 	req := parseCompletionRequest(args)
 
-	if req.forEquals || req.forSeparate {
+	if req.mode == completionModeForValue {
 		return o.completeForRequest(ctx, req), 6, nil
 	}
-	if req.forFlagName {
+	if req.mode == completionModeForFlag {
 		return []string{"--for="}, 6, nil
 	}
-	if req.flagPartial != "" {
-		return filterValues([]string{"--for"}, req.flagPartial), 6, nil
+	if req.mode == completionModeFlagPartial {
+		return filterValues([]string{"--for"}, req.toComplete), 6, nil
 	}
 
 	candidates, directive := o.resourceCompleter(completedResourceArgs(req.resourceArgs), req.toComplete)
@@ -86,10 +93,10 @@ func (o *waitxOptions) completeForRequest(ctx context.Context, req completionReq
 		if resourceArg, ok := completionResourceArg(req.resourceArgs); ok {
 			conditions = o.completionConditions(ctx, resourceArg)
 		}
-		if req.forEquals {
+		if req.valuePrefix == "" {
 			return filterValues(conditions, req.forValue)
 		}
-		return filterPrefixed(conditions, "condition="+req.forValue, "condition=")
+		return filterPrefixed(conditions, req.valuePrefix+req.forValue, req.valuePrefix)
 	}
 
 	return filterValues(defaultForPrefixes, req.forValue)

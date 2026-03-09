@@ -20,23 +20,26 @@ func TestFilterPrefixed(t *testing.T) {
 func TestParseCompletionRequest(t *testing.T) {
 	req := parseCompletionRequest([]string{"pod", "mypod", "--for=condition=P"})
 	require.Equal(t, []string{"pod", "mypod"}, req.resourceArgs)
-	require.True(t, req.forEquals)
+	require.Equal(t, completionModeForValue, req.mode)
 	require.True(t, req.conditionContext)
 	require.Equal(t, "P", req.forValue)
+	require.Empty(t, req.valuePrefix)
 
 	req = parseCompletionRequest([]string{"pod", "mypod", "--for", "condition=Po"})
 	require.Equal(t, []string{"pod", "mypod"}, req.resourceArgs)
-	require.True(t, req.forSeparate)
+	require.Equal(t, completionModeForValue, req.mode)
 	require.True(t, req.conditionContext)
 	require.Equal(t, "Po", req.forValue)
+	require.Equal(t, "condition=", req.valuePrefix)
 
 	req = parseCompletionRequest([]string{"pod", "mypod", "--for"})
 	require.Equal(t, []string{"pod", "mypod"}, req.resourceArgs)
-	require.True(t, req.forFlagName)
+	require.Equal(t, completionModeForFlag, req.mode)
 
 	req = parseCompletionRequest([]string{"pod", "mypod", "--f"})
 	require.Equal(t, []string{"pod", "mypod"}, req.resourceArgs)
-	require.Equal(t, "--f", req.flagPartial)
+	require.Equal(t, completionModeFlagPartial, req.mode)
+	require.Equal(t, "--f", req.toComplete)
 }
 
 func TestCompleteBinaryConditionForms(t *testing.T) {
