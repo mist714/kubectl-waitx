@@ -4,7 +4,7 @@ PLUGIN_BIN := $(BIN_DIR)/kubectl-waitx
 PLUGIN_COMPLETE_BIN := $(BIN_DIR)/kubectl_complete-waitx
 PREFIX ?= $(HOME)/.local/bin
 
-.PHONY: deps build install test fmt lint clean
+.PHONY: deps build install test e2e fmt lint clean
 
 deps:
 	go mod download
@@ -26,6 +26,9 @@ install: build
 
 test: build
 	go test ./... $(GO_TEST_FLAGS)
+
+e2e: build
+	./hack/e2e.sh
 
 fmt:
 	go fix ./...
