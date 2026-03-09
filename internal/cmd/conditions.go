@@ -46,10 +46,7 @@ func completionResourceArg(args []string) (string, bool) {
 		return "", false
 	}
 	if len(args) == 1 {
-		if strings.Contains(args[0], "/") {
-			return args[0], true
-		}
-		return "", false
+		return args[0], true
 	}
 	if strings.Contains(args[0], "/") {
 		return args[0], true
