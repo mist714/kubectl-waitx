@@ -1,3 +1,4 @@
+// Package main generates builtin condition completion data for package cmd.
 package main
 
 import (
