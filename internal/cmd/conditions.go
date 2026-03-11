@@ -2,65 +2,46 @@ package cmd
 
 import (
 	"context"
-	"errors"
-	"slices"
 	"strings"
 
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/cli-runtime/pkg/resource"
 )
 
-func (o *waitxOptions) lookupConditions(ctx context.Context, resourceArg string) ([]string, error) {
-	if o.conditionLookupFunc != nil {
-		return o.conditionLookupFunc(ctx, resourceArg)
-	}
-
+func (o *waitxOptions) lookupConditions(ctx context.Context, resourceArg string) []string {
 	infos, err := o.resourceInfos(ctx, resourceArg)
 	if err != nil {
-		return nil, err
+		return nil
 	}
-	if len(infos) == 0 {
-		return nil, errors.New("resource not found")
-	}
-
-	seen := map[string]struct{}{}
 	for _, info := range infos {
-		for _, condition := range extractConditionTypes(info.Object) {
-			seen[condition] = struct{}{}
+		if conditions := builtinConditionsFor(info); len(conditions) != 0 {
+			return conditions
+		}
+		u, ok := info.Object.(*unstructured.Unstructured)
+		if !ok {
+			continue
+		}
+		// Fall back to the first object that already has conditions.
+		if conditions := extractConditionTypes(u); len(conditions) != 0 {
+			return conditions
 		}
 	}
-	if len(seen) == 0 {
-		return nil, errors.New("no conditions found")
-	}
-
-	conditions := make([]string, 0, len(seen))
-	for condition := range seen {
-		conditions = append(conditions, condition)
-	}
-	slices.Sort(conditions)
-	return conditions, nil
+	return nil
 }
 
 func completionResourceArg(args []string) (string, bool) {
 	if len(args) == 0 {
 		return "", false
 	}
-	if len(args) == 1 {
-		return args[0], true
+	resource := args[0]
+	if len(args) == 1 || strings.Contains(resource, "/") {
+		return resource, true
 	}
-	if strings.Contains(args[0], "/") {
-		return args[0], true
-	}
-	return args[0] + "/" + args[1], true
+	return resource + "/" + args[1], true
 }
 
-func extractConditionTypes(object any) []string {
-	unstructuredObject, ok := object.(*unstructured.Unstructured)
-	if !ok {
-		return nil
-	}
-
-	items, found, err := unstructured.NestedSlice(unstructuredObject.Object, "status", "conditions")
+func extractConditionTypes(u *unstructured.Unstructured) []string {
+	items, found, err := unstructured.NestedSlice(u.Object, "status", "conditions")
 	if err != nil || !found {
 		return nil
 	}
@@ -71,19 +52,24 @@ func extractConditionTypes(object any) []string {
 		if !ok {
 			continue
 		}
-		value, ok := entry["type"].(string)
-		if ok && value != "" {
-			conditions = append(conditions, value)
+		if condition, _ := entry["type"].(string); condition != "" {
+			conditions = append(conditions, condition)
 		}
 	}
 	return conditions
+}
+
+func builtinConditionsFor(info *resource.Info) []string {
+	if info.Mapping == nil {
+		return nil
+	}
+	return builtinConditions[info.Mapping.GroupVersionKind.Kind]
 }
 
 func (o *waitxOptions) resourceInfos(ctx context.Context, resourceArg string) ([]*resource.Info, error) {
 	if o.resourceInfosFunc != nil {
 		return o.resourceInfosFunc(ctx, resourceArg)
 	}
-
 	factory := o.factoryFunc()
 	namespace, _, err := o.configFlags.ToRawKubeConfigLoader().Namespace()
 	if err != nil {
