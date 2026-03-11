@@ -5,15 +5,21 @@ PREFIX ?= $(HOME)/.local/bin
 ASCIINEMA ?= asciinema
 SVG_TERM ?= svg-term
 GO_SOURCES := main.go $(wildcard internal/cmd/*.go)
+BUILTIN_CONDITIONS := internal/cmd/builtin_conditions_gen.go
 ASCIINEMA_SCRIPT := hack/asciinema/readme-demo.sh
 ASCIINEMA_CAST := hack/asciinema/readme-demo.cast
 ASCIINEMA_SVG := hack/asciinema/readme-demo.svg
 
-.PHONY: deps build install test e2e asciinema-demo fmt lint clean svg
+.PHONY: deps generate build install test e2e asciinema-demo fmt lint clean svg
 
 deps:
 	go mod download
 	go mod tidy
+
+generate: $(BUILTIN_CONDITIONS)
+
+$(BUILTIN_CONDITIONS): hack/generate-builtin-conditions/main.go go.mod go.sum
+	go generate ./internal/cmd
 
 $(BIN_DIR):
 	mkdir -p $(BIN_DIR)

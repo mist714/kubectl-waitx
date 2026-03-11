@@ -42,6 +42,9 @@ func TestE2E(t *testing.T) {
 
 	t.Run("for flag", func(t *testing.T) {
 		assertKubectlCompletionContains(t, "--for", "pod", podAlpha, "--f")
+		assertKubectlCompletionContains(t, "--field-selector", "pod", podAlpha, "--f")
+		assertKubectlCompletionContains(t, "--timeout", "pod", podAlpha, "--t")
+		assertKubectlCompletionContains(t, "-A", "pod", podAlpha, "-")
 		assertKubectlCompletionContains(t, "condition=", "pod", podAlpha, "--for=")
 		assertKubectlCompletionContains(t, "create", "pod", podAlpha, "--for=")
 		assertKubectlCompletionContains(t, "delete", "pod", podAlpha, "--for=")
@@ -50,6 +53,7 @@ func TestE2E(t *testing.T) {
 
 	t.Run("builtin conditions", func(t *testing.T) {
 		assertKubectlCompletionContains(t, "PodScheduled", "pod", "--for=condition=P")
+		assertKubectlCompletionContains(t, "condition=PodScheduled", "pod", "--for", "condition=P")
 		assertKubectlCompletionContains(t, "PodScheduled", "pod", podAlpha, "--for=condition=P")
 		assertKubectlCompletionContains(t, "PodReadyToStartContainers", "pod", podAlpha, "--for=condition=PodR")
 		assertKubectlCompletionContains(t, "Available", "deployment", "--for=condition=A")
@@ -134,6 +138,7 @@ func completionLines(t *testing.T, name string, args ...string) []string {
 		if line == "" || completionDirectivePattern.MatchString(line) {
 			continue
 		}
+		line = strings.Split(line, "\t")[0]
 		out = append(out, line)
 	}
 	return out
