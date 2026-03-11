@@ -3,54 +3,42 @@ kind: Plugin
 metadata:
   name: waitx
 spec:
+  version: v0.0.6
+  homepage: https://github.com/mist714/kubectl-waitx
+  shortDescription: Better completion for kubectl wait
+  description: |
+    kubectl-waitx improves shell completion for kubectl wait,
+    especially around --for values and condition names.
   caveats: |
     After installing with krew, point kubectl_complete-waitx at the same binary:
 
       ln -sf kubectl-waitx "${KREW_ROOT:-$HOME/.krew}/bin/kubectl_complete-waitx"
-  description: |
-    kubectl-waitx improves shell completion for kubectl wait,
-    especially around --for values and condition names.
-  homepage: https://github.com/mist714/kubectl-waitx
   platforms:
-    - bin: kubectl-waitx
-      files:
-        - from: kubectl-waitx
-          to: .
-      selector:
+    - selector:
         matchLabels:
-          arch: amd64
           os: darwin
-      sha256: 973da0dc5b45ab53a661a3a0fa4e7968ca4a38ee22447ee224ed40283ce3fa63
+          arch: amd64
       uri: https://github.com/mist714/kubectl-waitx/releases/download/v0.0.6/kubectl-waitx_0.0.6_darwin_amd64.tar.gz
-    - bin: kubectl-waitx
-      files:
-        - from: kubectl-waitx
-          to: .
-      selector:
+      sha256: 973da0dc5b45ab53a661a3a0fa4e7968ca4a38ee22447ee224ed40283ce3fa63
+      bin: kubectl-waitx
+    - selector:
         matchLabels:
-          arch: arm64
           os: darwin
-      sha256: 69db8b343828793af1b0c8bf3ccbc061d0e60feb14b20fa5262256291f6b3aec
-      uri: https://github.com/mist714/kubectl-waitx/releases/download/v0.0.6/kubectl-waitx_0.0.6_darwin_arm64.tar.gz
-    - bin: kubectl-waitx
-      files:
-        - from: kubectl-waitx
-          to: .
-      selector:
-        matchLabels:
-          arch: amd64
-          os: linux
-      sha256: c13eb07050ebc192c9e50a7e9fac396a4b0e395b0e3c4a756ec345b9eef73457
-      uri: https://github.com/mist714/kubectl-waitx/releases/download/v0.0.6/kubectl-waitx_0.0.6_linux_amd64.tar.gz
-    - bin: kubectl-waitx
-      files:
-        - from: kubectl-waitx
-          to: .
-      selector:
-        matchLabels:
           arch: arm64
+      uri: https://github.com/mist714/kubectl-waitx/releases/download/v0.0.6/kubectl-waitx_0.0.6_darwin_arm64.tar.gz
+      sha256: 69db8b343828793af1b0c8bf3ccbc061d0e60feb14b20fa5262256291f6b3aec
+      bin: kubectl-waitx
+    - selector:
+        matchLabels:
           os: linux
-      sha256: 48a3ce0a022a7bd5664168967eda4564e7a26dfacbeb6db23c08c0b8fede85f2
+          arch: amd64
+      uri: https://github.com/mist714/kubectl-waitx/releases/download/v0.0.6/kubectl-waitx_0.0.6_linux_amd64.tar.gz
+      sha256: c13eb07050ebc192c9e50a7e9fac396a4b0e395b0e3c4a756ec345b9eef73457
+      bin: kubectl-waitx
+    - selector:
+        matchLabels:
+          os: linux
+          arch: arm64
       uri: https://github.com/mist714/kubectl-waitx/releases/download/v0.0.6/kubectl-waitx_0.0.6_linux_arm64.tar.gz
-  shortDescription: Better completion for kubectl wait
-  version: v0.0.6
+      sha256: 48a3ce0a022a7bd5664168967eda4564e7a26dfacbeb6db23c08c0b8fede85f2
+      bin: kubectl-waitx

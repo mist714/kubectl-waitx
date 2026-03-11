@@ -1,7 +1,0 @@
-varReference:
-  - path: spec/version
-    kind: Plugin
-  - path: spec/platforms[]/uri
-    kind: Plugin
-  - path: spec/platforms[]/sha256
-    kind: Plugin
