@@ -72,7 +72,9 @@ func loadBuiltinConditions() (map[string][]conditionRef, error) {
 }
 
 func findBuiltinConditionType(resource *types.Struct) *types.TypeName {
-	if resource == nil { return nil }
+	if resource == nil {
+		return nil
+	}
 	var hasTypeMeta, hasObjectMeta bool
 	var status *types.Struct
 	for field := range resource.Fields() {
@@ -93,7 +95,9 @@ func findBuiltinConditionType(resource *types.Struct) *types.TypeName {
 			status, _ = named.Underlying().(*types.Struct)
 		}
 	}
-	if !hasTypeMeta || !hasObjectMeta || status == nil { return nil }
+	if !hasTypeMeta || !hasObjectMeta || status == nil {
+		return nil
+	}
 	for field := range status.Fields() {
 		if field.Name() != "Conditions" {
 			continue
@@ -122,11 +126,17 @@ func findBuiltinConditionType(resource *types.Struct) *types.TypeName {
 
 func findConditionConst(importPath string, obj types.Object) (conditionRef, *types.TypeName, bool) {
 	c, ok := obj.(*types.Const)
-	if !ok { return conditionRef{}, nil, false }
+	if !ok {
+		return conditionRef{}, nil, false
+	}
 	named, ok := c.Type().(*types.Named)
-	if !ok { return conditionRef{}, nil, false }
+	if !ok {
+		return conditionRef{}, nil, false
+	}
 	basic, ok := named.Underlying().(*types.Basic)
-	if !ok || basic.Kind() != types.String || !strings.HasSuffix(named.Obj().Name(), "ConditionType") { return conditionRef{}, nil, false }
+	if !ok || basic.Kind() != types.String || !strings.HasSuffix(named.Obj().Name(), "ConditionType") {
+		return conditionRef{}, nil, false
+	}
 	return conditionRef{
 		importPath: importPath,
 		constName:  c.Name(),
