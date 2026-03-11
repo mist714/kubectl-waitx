@@ -1,5 +1,9 @@
 # Changelog
 
+## [v0.0.6](https://github.com/mist714/kubectl-waitx/compare/v0.0.5...v0.0.6) - 2026-03-11
+- Update Krew manifest for v0.0.5 by @github-actions[bot] in https://github.com/mist714/kubectl-waitx/pull/21
+- Fix krew manifest path by @mist714 in https://github.com/mist714/kubectl-waitx/pull/23
+
 ## [v0.0.5](https://github.com/mist714/kubectl-waitx/compare/v0.0.4...v0.0.5) - 2026-03-11
 - Update Krew manifest for v0.0.4 by @github-actions[bot] in https://github.com/mist714/kubectl-waitx/pull/11
 - Support custom krew index by @mist714 in https://github.com/mist714/kubectl-waitx/pull/13
