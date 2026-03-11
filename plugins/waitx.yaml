@@ -3,7 +3,7 @@ kind: Plugin
 metadata:
   name: waitx
 spec:
-  version: "v0.0.5"
+  version: "v0.0.6"
   homepage: https://github.com/mist714/kubectl-waitx
   shortDescription: Better completion for kubectl wait
   description: |
@@ -18,8 +18,8 @@ spec:
       matchLabels:
         os: darwin
         arch: amd64
-    uri: https://github.com/mist714/kubectl-waitx/releases/download/v0.0.5/kubectl-waitx_0.0.5_darwin_amd64.tar.gz
-    sha256: 3ed062989d6268fc9f829cc11956a75ef5b33966939852a0d6c56316335e482b
+    uri: https://github.com/mist714/kubectl-waitx/releases/download/v0.0.6/kubectl-waitx_0.0.6_darwin_amd64.tar.gz
+    sha256: 973da0dc5b45ab53a661a3a0fa4e7968ca4a38ee22447ee224ed40283ce3fa63
     files:
       - from: kubectl-waitx
         to: .
@@ -29,8 +29,8 @@ spec:
       matchLabels:
         os: darwin
         arch: arm64
-    uri: https://github.com/mist714/kubectl-waitx/releases/download/v0.0.5/kubectl-waitx_0.0.5_darwin_arm64.tar.gz
-    sha256: a346980b20728e2da807caea25e0fc98be55ed4f051d2141fa16675de2362876
+    uri: https://github.com/mist714/kubectl-waitx/releases/download/v0.0.6/kubectl-waitx_0.0.6_darwin_arm64.tar.gz
+    sha256: 69db8b343828793af1b0c8bf3ccbc061d0e60feb14b20fa5262256291f6b3aec
     files:
       - from: kubectl-waitx
         to: .
@@ -40,8 +40,8 @@ spec:
       matchLabels:
         os: linux
         arch: amd64
-    uri: https://github.com/mist714/kubectl-waitx/releases/download/v0.0.5/kubectl-waitx_0.0.5_linux_amd64.tar.gz
-    sha256: 365f0b432ec961a1471a32c29cc609f303ea25f9e463198a51f5bd322dde7e01
+    uri: https://github.com/mist714/kubectl-waitx/releases/download/v0.0.6/kubectl-waitx_0.0.6_linux_amd64.tar.gz
+    sha256: c13eb07050ebc192c9e50a7e9fac396a4b0e395b0e3c4a756ec345b9eef73457
     files:
       - from: kubectl-waitx
         to: .
@@ -51,8 +51,8 @@ spec:
       matchLabels:
         os: linux
         arch: arm64
-    uri: https://github.com/mist714/kubectl-waitx/releases/download/v0.0.5/kubectl-waitx_0.0.5_linux_arm64.tar.gz
-    sha256: 34121814ef5ae96c4687aa8d897b996102e6e1667de41322e149a00837319e4c
+    uri: https://github.com/mist714/kubectl-waitx/releases/download/v0.0.6/kubectl-waitx_0.0.6_linux_arm64.tar.gz
+    sha256: 48a3ce0a022a7bd5664168967eda4564e7a26dfacbeb6db23c08c0b8fede85f2
     files:
       - from: kubectl-waitx
         to: .
