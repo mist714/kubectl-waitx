@@ -42,10 +42,10 @@ jobs:
       - if: steps.tagpr.outputs.tag != ''
         run: |
           git checkout main
-          ./hack/krew/render-manifest.sh "${{ steps.tagpr.outputs.tag }}" dist/checksums.txt > waitx.yaml
+          ./hack/krew/render-manifest.sh "${{ steps.tagpr.outputs.tag }}" dist/checksums.txt > plugins/waitx.yaml
           git config user.name github-actions[bot]
           git config user.email 41898282+github-actions[bot]@users.noreply.github.com
-          git add waitx.yaml
+          git add plugins/waitx.yaml
           git diff --cached --quiet && exit 0
           branch="update-krew-manifest-${{ steps.tagpr.outputs.tag }}"
           git checkout -b "$branch"
@@ -55,6 +55,6 @@ jobs:
             --base main \
             --head "$branch" \
             --title "Update Krew manifest for ${{ steps.tagpr.outputs.tag }}" \
-            --body "Update \`waitx.yaml\` checksums and release URLs for ${{ steps.tagpr.outputs.tag }}."
+            --body "Update \`plugins/waitx.yaml\` checksums and release URLs for ${{ steps.tagpr.outputs.tag }}."
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
