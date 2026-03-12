@@ -1,5 +1,10 @@
 # Changelog
 
+## [v0.0.7](https://github.com/mist714/kubectl-waitx/compare/v0.0.6...v0.0.7) - 2026-03-12
+- Update Krew manifest for v0.0.6 by @github-actions[bot] in https://github.com/mist714/kubectl-waitx/pull/24
+- delete waitx.yaml by @mist714 in https://github.com/mist714/kubectl-waitx/pull/26
+- Refactor krew manifest by @mist714 in https://github.com/mist714/kubectl-waitx/pull/27
+
 ## [v0.0.6](https://github.com/mist714/kubectl-waitx/compare/v0.0.5...v0.0.6) - 2026-03-11
 - Update Krew manifest for v0.0.5 by @github-actions[bot] in https://github.com/mist714/kubectl-waitx/pull/21
 - Fix krew manifest path by @mist714 in https://github.com/mist714/kubectl-waitx/pull/23
